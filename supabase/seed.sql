@@ -1,0 +1,5 @@
+-- Catalog and content seed data are loaded from data/mock via:
+--
+--   npm run db:seed
+--
+-- See scripts/seed-supabase.ts (requires NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).

@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
+  --muted: #F4F4F4;
+  --accent: #FF3B30;
+  --border: #E5E5E5;
+  --secondary: #6B7280;
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-secondary: var(--secondary);
+}
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+  body {
+    @apply bg-white text-black font-sans antialiased selection:bg-black selection:text-white;
+    font-family: var(--font-geist), system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-black ring-offset-2;
+  }
+}
+
+@layer components {
+  .container-mqb {
+    @apply max-w-[1440px] mx-auto px-5 md:px-8 xl:px-12;
+  }
+  
+  .text-heading-xl {
+    @apply text-4xl md:text-5xl lg:text-7xl font-black tracking-tighter uppercase leading-[0.9];
+  }
+  
+  .text-heading-lg {
+    @apply text-3xl md:text-5xl font-extrabold tracking-tight uppercase leading-none;
+  }
+  
+  .text-heading-md {
+    @apply text-2xl md:text-3xl font-bold tracking-tight;
+  }
+  
+  .btn-primary {
+    @apply bg-black text-white px-8 py-3.5 rounded-md transition-all duration-300 font-semibold inline-flex items-center justify-center shadow-md active:scale-[0.98] hover:bg-neutral-800 hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply border-2 border-black text-black px-8 py-3.5 rounded-md font-semibold transition-all duration-300 inline-flex items-center justify-center active:scale-[0.98] hover:bg-black hover:text-white hover:shadow-md;
+  }
+}
