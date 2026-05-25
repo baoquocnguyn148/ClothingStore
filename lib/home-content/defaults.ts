@@ -312,7 +312,7 @@ export const HOME_CONTENT_DEFAULTS: HomeContentBlock[] = [
     key: 'reviews.cta_href',
     section: 'Reviews',
     label: 'Reviews CTA link',
-    value: '/collections',
+    value: '/reviews',
     type: 'url',
     sortOrder: 640,
   },
