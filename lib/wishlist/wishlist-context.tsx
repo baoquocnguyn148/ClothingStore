@@ -70,8 +70,17 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
           });
           setHandles(data.handles ?? []);
           return;
-        } catch {
-          // fallback local if not logged in
+        } catch (err: any) {
+          // If API returned 401 (not authenticated), force login instead of silently
+          // falling back to local wishlist (which confuses users).
+          if (err && err.status === 401) {
+            // redirect user to login
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+              return;
+            }
+          }
+          // fallback local if API failed for other reasons
         }
       }
       setHandles((prev) =>

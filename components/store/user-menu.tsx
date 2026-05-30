@@ -74,11 +74,10 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-full p-1.5 pr-3 transition-all hover:bg-black/5"
+          className="rounded-full p-2.5 transition-all hover:bg-black/5 flex items-center justify-center"
           aria-label="Tài khoản"
         >
-          <UserCircle2 size={28} className="text-gray-600" />
-          <span className="hidden max-w-[120px] truncate text-sm font-semibold sm:block">{name}</span>
+          <User size={20} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl shadow-xl">

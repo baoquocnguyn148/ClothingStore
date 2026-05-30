@@ -1,305 +1,142 @@
-# B&D Storefront
+# B&D Fashion - Enterprise E-Commerce Platform
 
-Modern e-commerce storefront and admin panel built with Next.js App Router, React, Tailwind CSS, shadcn/Radix UI, and Supabase.
+B&D Fashion là một nền tảng thương mại điện tử toàn diện, được thiết kế và xây dựng với kiến trúc hiện đại, tập trung vào hiệu suất, trải nghiệm người dùng (UI/UX) cao cấp và hệ thống quản trị (Admin/ERP) mạnh mẽ đằng sau.
 
-The project can run in two modes:
+Dự án này không chỉ là một trang web bán hàng (Storefront) mà còn bao gồm một hệ thống thông tin quản lý doanh nghiệp tích hợp, bao gồm các phân hệ TPS, MIS, DSS, ESS và CRM.
 
-- `mock`: local catalog/content data and localStorage cart/account fallback. Best for quick frontend development.
-- `supabase`: Supabase Auth, PostgreSQL-backed catalog/cart/orders/wishlist/admin, payments, promotions, shipping, reviews, and inventory.
+---
 
-Recruitment/careers and job application features are intentionally not part of this system.
+## 🛠 Technology Stack (Công nghệ sử dụng)
 
-## Tech Stack
+Hệ thống được phát triển dựa trên các công nghệ web hiện đại nhất hiện nay:
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- shadcn/Radix UI components
-- Supabase Auth, PostgreSQL, Storage
-- VNPay, MoMo, and ZaloPay demo payment flows
-- Node test runner via `tsx --test`
+### Frontend (Client-side)
+- **Framework:** [Next.js 15](https://nextjs.org/) (App Router) - Server-side Rendering (SSR) & Static Site Generation (SSG) tối ưu SEO và tốc độ.
+- **Library:** [React 19](https://react.dev/) - Thư viện UI cốt lõi.
+- **Language:** TypeScript - Đảm bảo type-safety và dễ bảo trì.
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) - Utility-first CSS framework cho UI tùy biến cao, kết hợp CSS thuần (`globals.css`) cho các hiệu ứng micro-animations.
+- **Icons:** Lucide React.
+- **Fonts:** Google Fonts (Inter, Geist).
 
-## Prerequisites
+### Backend (Server-side)
+- **API Architecture:** Next.js Route Handlers (`app/api/*`) & Server Actions.
+- **BaaS (Backend-as-a-Service):** [Supabase](https://supabase.com/) - Thay thế backend truyền thống.
+- **Authentication:** Supabase Auth (Hỗ trợ JWT, Email/Password login, Session management).
+- **Storage:** Supabase Storage (Lưu trữ hình ảnh sản phẩm, avatar, banner).
 
-- Node.js 22 or newer is recommended.
-- npm 10 or newer.
-- A Supabase project if you want to run the full backend mode.
+### Database
+- **RDBMS:** PostgreSQL (Được host và quản lý bởi Supabase).
+- **ORM / Query Builder:** Supabase JavaScript Client (`@supabase/supabase-js`).
+- **Thiết kế CSDL:** Hệ cơ sở dữ liệu quan hệ hoàn chỉnh với các bảng: `users`, `products`, `product_variants`, `orders`, `order_items`, `inventory_movements`, `wishlists`, v.v.
 
-This repository includes `package-lock.json`, so npm is the default package manager.
+### Khác
+- **State Management:** React Context API (`CartProvider`, `WishlistProvider`).
+- **Deployment:** Vercel (Tối ưu riêng cho Next.js).
 
-## Quick Start: Mock Mode
+---
 
-Mock mode does not require Supabase credentials.
+## 🏗 System Architecture & Design (Kiến trúc hệ thống)
 
-```bash
-npm install
-copy .env.example .env.local
-npm run dev
-```
+Dự án sử dụng kiến trúc **Monolithic SSR (Single-repo)** thông qua Next.js App Router, chia làm 2 hệ thống chính chạy song song trên cùng một miền:
 
-Open [http://localhost:3000](http://localhost:3000).
+1. **Storefront (`app/(store)`):** Giao diện hướng khách hàng (B2C), tập trung vào tốc độ tải trang (Caching/SSR), SEO và trải nghiệm mua sắm mượt mà.
+2. **Admin Dashboard (`app/admin` & `app/(admin)`):** Cổng quản trị nội bộ dành cho nhân viên và ban giám đốc, yêu cầu xác thực bảo mật khắt khe, fetch dữ liệu realtime hoặc dynamic.
 
-On macOS/Linux, use:
+**Luồng dữ liệu (Data Flow):**
+Client (Browser) -> Next.js Server (BFF - Backend for Frontend) -> Supabase PostgreSQL.
+Hệ thống cũng có một **Mock Mode** (Fallback) cho phép giao diện chạy trơn tru với dữ liệu giả lập (`getSession()`) khi chưa kết nối database thật.
 
-```bash
-cp .env.example .env.local
-```
+---
 
-Make sure these values remain set in `.env.local`:
+## 🛍 Storefront Features (Chức năng người dùng - B2C)
 
-```env
-COMMERCE_PROVIDER=mock
-NEXT_PUBLIC_COMMERCE_PROVIDER=mock
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+Giao diện User được thiết kế theo phong cách tối giản (Minimalist), cao cấp (Premium) tương tự các local brand / global brand thời trang lớn.
 
-## Full Backend: Supabase Mode
+- **Home Page:** Cấu trúc module động (Hero banner, New Arrivals, Styling/Blog, Reviews).
+- **Product Discovery:** 
+  - Trang Collections với bộ lọc Sidebar trực quan (Lọc theo danh mục, hàng mới, bán chạy).
+  - Search engine hỗ trợ tìm kiếm sản phẩm.
+- **Product Detail (PDP):**
+  - Layout hình ảnh thư viện (Gallery) tối ưu hiển thị sản phẩm thời trang.
+  - Chọn Màu/Size với kiểm tra tồn kho realtime.
+  - Nút thêm vào giỏ hàng và mua ngay (Quick buy).
+- **Cart & Checkout:**
+  - Giỏ hàng dạng Drawer (Trượt từ phải sang) tích hợp thanh tiến trình Freeship (Gamification).
+  - Thanh toán một trang (One-page checkout).
+- **Account & Membership:**
+  - Split-layout cho đăng ký/đăng nhập sang trọng.
+  - Dashboard tài khoản người dùng quản lý Đơn hàng, Yêu thích (Wishlist), Địa chỉ.
+  - Phân hạng thành viên (Membership Tier) - tích điểm.
 
-Use Supabase mode when you need real auth, cart, wishlist, checkout, orders, admin, inventory, promotions, shipping, and reviews.
+---
 
-### 1. Create `.env.local`
+## 🏢 Admin Panel & Information Systems (Hệ thống quản trị doanh nghiệp)
 
-```bash
-copy .env.example .env.local
-```
+Hệ thống Admin không chỉ là quản trị website (CMS), mà được thiết kế như một phần mềm ERP thu nhỏ, ứng dụng các mô hình Hệ thống thông tin chuẩn mực:
 
-Fill in:
+### 1. TPS (Transaction Processing System) - Hệ thống xử lý giao dịch
+- **Quản lý Đơn hàng (Orders):** Xử lý vòng đời đơn hàng từ lúc tạo mới, thanh toán, xác nhận, giao hàng đến hoàn tất hoặc hủy.
+- **Quản lý Cửa hàng/Sản phẩm (Products & Catalog):** Thêm, sửa, xóa sản phẩm, tạo các biến thể (Variants - màu sắc, kích cỡ).
+- **Quản lý Khuyến mãi (Promotions):** Tạo mã giảm giá, voucher.
 
-```env
-COMMERCE_PROVIDER=supabase
-NEXT_PUBLIC_COMMERCE_PROVIDER=supabase
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+### 2. MIS (Management Information System) - Hệ thống thông tin quản lý
+- **Quản lý Tồn kho (Inventory):** Quản lý số lượng SKU, tự động cảnh báo ngưỡng tồn kho thấp (Low stock alert), ghi nhận lịch sử biến động kho (Nhập/Xuất).
+- **Báo cáo nội bộ (MIS Reports):** Bảng điều khiển (Dashboard) thống kê doanh thu, số lượng đơn hàng, sản phẩm bán chạy theo thời gian thực để hỗ trợ quản lý cấp trung (Middle Management).
 
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-```
+### 3. DSS (Decision Support System) - Hệ thống hỗ trợ ra quyết định
+- **Phân tích Dữ liệu (Analytics):** Phân tích xu hướng mua hàng, tỷ lệ chuyển đổi (Conversion rate).
+- Các công cụ dự báo tồn kho (Dựa trên tốc độ bán hàng - Sell-through rate) để hỗ trợ quyết định nhập thêm hàng hay chạy khuyến mãi xả kho.
 
-Payment variables are optional for basic catalog/admin work, but required for live VNPay/MoMo payment creation:
+### 4. ESS (Executive Support System) - Hệ thống hỗ trợ lãnh đạo
+- Dành riêng cho Ban Giám Đốc (C-Level).
+- Bảng Dashboard tóm tắt dữ liệu cấp cao (High-level data): Tốc độ tăng trưởng, sức khỏe doanh nghiệp, báo cáo tài chính tổng quan. Thay vì chi tiết từng đơn hàng, ESS hiển thị biểu đồ trực quan (Charts, Graphs).
 
-```env
-VNPAY_TMN_CODE=
-VNPAY_HASH_SECRET=
-VNPAY_PAYMENT_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+### 5. CRM (Customer Relationship Management) - Quản lý quan hệ khách hàng
+- Quản lý hồ sơ khách hàng (Customer profiles).
+- Lịch sử mua hàng, chi tiêu tổng (Total spent), phân hạng khách hàng (VIP, Member).
+- Hệ thống gửi thông báo (Notifications) và Email Marketing (Chỉnh sửa Email templates).
 
-MOMO_PARTNER_CODE=
-MOMO_ACCESS_KEY=
-MOMO_SECRET_KEY=
-MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
-```
+---
 
-### 2. Run migrations
-
-Run the SQL files in this order in the Supabase SQL Editor:
-
-```text
-supabase/migrations/20260521000001_initial_schema.sql
-supabase/migrations/20260521000002_rls_policies.sql
-supabase/migrations/20260521000003_storage_buckets.sql
-supabase/migrations/20260522000004_catalog_enhancements.sql
-supabase/migrations/20260522000005_promotions_and_shipping.sql
-supabase/migrations/20260522000009_functions_and_triggers.sql
-supabase/migrations/20260523000001_remove_careers.sql
-supabase/migrations/20260523000002_home_content_blocks.sql
-```
-
-If you prefer a single file for a fresh database, use `all_migrations_to_copy.sql`. For existing databases, still apply any newer migration files that were added after your previous setup.
-
-### 3. Seed demo data
-
-```bash
-npm run db:seed
-```
-
-The seed script requires:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-### 4. Create an admin user
-
-1. Register a user through `/register`, or create one in Supabase Auth.
-2. Promote that user to admin:
-
-```bash
-npx tsx scripts/make-admin.ts user@example.com
-```
-
-Admin users are identified by `profiles.role = 'admin'`.
-
-### 5. Start the app
-
-```bash
-npm run dev
-```
-
-Open:
-
-- Storefront: [http://localhost:3000](http://localhost:3000)
-- Admin: [http://localhost:3000/admin](http://localhost:3000/admin)
-
-## Available Scripts
-
-```bash
-npm run dev       # Start local Next.js dev server
-npm run build     # Build production bundle
-npm run start     # Start production server after build
-npm test          # Run unit tests
-npm run db:seed   # Seed Supabase demo data
-```
-
-`npm run lint` is present in `package.json`, but the current repository does not include `eslint` as a dependency. Install/configure ESLint before relying on that script.
-
-On Windows PowerShell, if `npm` is blocked by execution policy, run the same commands with `npm.cmd`, for example:
-
-```powershell
-npm.cmd install
-npm.cmd run dev
-npm.cmd test
-```
-
-## Environment Variables
-
-| Variable | Required | Mode | Description |
-| --- | --- | --- | --- |
-| `NEXT_PUBLIC_APP_URL` | Yes | All | Public app URL used for callbacks and demo payment redirects. |
-| `COMMERCE_PROVIDER` | Yes | All | Server-side provider: `mock`, `supabase`, or `shopify`. |
-| `NEXT_PUBLIC_COMMERCE_PROVIDER` | Yes | All | Client-side provider flag. Keep it aligned with `COMMERCE_PROVIDER`. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase | Supabase project URL. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase | Supabase anon key for browser auth/client usage. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase/admin/seed | Service role key for server-side admin operations and seed scripts. Never expose publicly. |
-| `VNPAY_TMN_CODE` | Payment | Supabase | VNPay sandbox/merchant terminal code. |
-| `VNPAY_HASH_SECRET` | Payment | Supabase | VNPay signing secret. |
-| `VNPAY_PAYMENT_URL` | Payment | Supabase | VNPay payment URL. Defaults to sandbox in `.env.example`. |
-| `MOMO_PARTNER_CODE` | Payment | Supabase | MoMo partner code. |
-| `MOMO_ACCESS_KEY` | Payment | Supabase | MoMo access key. |
-| `MOMO_SECRET_KEY` | Payment | Supabase | MoMo signing secret. |
-| `MOMO_ENDPOINT` | Payment | Supabase | MoMo payment creation endpoint. |
-| `SHOPIFY_STORE_DOMAIN` | Optional | Shopify | Shopify store domain. Shopify support currently falls back to mock data for most storefront behavior. |
-| `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | Optional | Shopify | Shopify Storefront API token. |
-
-## Main Features
-
-### Storefront
-
-- Homepage with announcement bar, hero, product sections, collections, styling/outfit content, and reviews teaser.
-- Collection and category browsing.
-- Search, filtering, and sorting.
-- Product detail pages with variants, image gallery, related products, add-to-cart, and wishlist.
-- Cart drawer with mock localStorage mode or Supabase-backed cart mode.
-- Checkout with order creation and payment redirect flow.
-- Account dashboard, profile, addresses, wishlist, and order history.
-- Blog/outfit and CMS policy pages.
-
-### Admin
-
-- Admin-only layout and route/API guards.
-- Dashboard statistics, revenue chart, status overview, and notifications.
-- Editable homepage copy via the admin Home Content module.
-- Product list, create, edit, soft delete, and publish/unpublish basics.
-- Inventory alerts and inline restock.
-- Order list, detail, and status updates.
-- Review moderation.
-- Promotions list/API and shipping zone list/calculation support.
-
-Some admin modules are intentionally partial placeholders, such as customers, blog management, and notification settings.
-
-## Project Structure
-
-```text
-app/
-  (store)/                 Storefront pages
-  admin/                   Admin pages
-  api/                     Next.js route handlers
-
-components/
-  store/                   Storefront components
-  admin/                   Admin components
-  ui/                      Shared UI primitives
-
-data/mock/                 Local mock products, collections, blog, policies
-lib/
-  api/                     API helpers
-  auth/                    Mock local session helpers
-  cart/                    Cart context and API client
-  commerce/                Commerce provider abstraction
-  server/                  Server-side business services
-  supabase/                Supabase clients
-  wishlist/                Wishlist context
-
-scripts/                   Seed/admin maintenance scripts
-supabase/migrations/       SQL migrations
-tests/                     Unit tests
-public/                    Static images and icons
-```
-
-## Testing and Verification
-
-Run unit tests:
-
-```bash
-npm test
-```
-
-Build the app:
-
-```bash
-npm run build
-```
-
-Known build warning:
-
-- Next.js warns that the `middleware.ts` convention is deprecated in favor of `proxy`. This is a framework migration warning and does not currently block the build.
-
-## Payment Webhooks
-
-The app exposes:
-
-- VNPay IPN: `GET /api/webhooks/vnpay`
-- MoMo IPN: `POST /api/webhooks/momo`
-
-For local webhook testing, expose your localhost with a tunnel and set:
-
-```env
-NEXT_PUBLIC_APP_URL=https://your-public-tunnel-url
-```
-
-## Troubleshooting
-
-### `Supabase admin client requires ...`
-
-You are running Supabase mode or an admin/seed script without:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-Fill them in `.env.local`, or switch back to mock mode.
-
-### Login/register does not persist
-
-Check that `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are valid and that Supabase Auth email/password sign-in is enabled.
-
-### Admin redirects to home
-
-The user exists but is not an admin. Set `profiles.role = 'admin'` or run:
-
-```bash
-npx tsx scripts/make-admin.ts user@example.com
-```
-
-### PowerShell blocks `npm`
-
-Use `npm.cmd`:
-
-```powershell
-npm.cmd run dev
-```
-
-### `npm run lint` fails because `eslint` is missing
-
-The lint script is present, but ESLint is not currently installed in this repository. Add an ESLint setup before using the lint command.
-
-## License
-
-Private/internal project. Do not use third-party brand names, trademarks, or assets commercially without permission.
+## 🚀 Setup & Installation (Hướng dẫn cài đặt)
+
+**Yêu cầu hệ thống:**
+- Node.js >= 18.17.0
+- Git
+
+**Các bước cài đặt:**
+
+1. **Clone repository:**
+   ```bash
+   git clone <repo-url>
+   cd levents-clone
+   ```
+
+2. **Cài đặt dependencies:**
+   ```bash
+   npm install
+   # hoặc yarn install / pnpm install
+   ```
+
+3. **Cấu hình biến môi trường (Environment Variables):**
+   Tạo file `.env.local` ở thư mục gốc:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+   *(Lưu ý: Nếu không có `.env`, ứng dụng sẽ tự động chạy ở chế độ **Mock Mode** - không cần Database).*
+
+4. **Khởi chạy ứng dụng (Development):**
+   ```bash
+   npm run dev
+   ```
+   Truy cập `http://localhost:3000` cho Storefront và `http://localhost:3000/admin` cho Admin Panel.
+
+5. **Build cho Production:**
+   ```bash
+   npm run build
+   npm run start
+   ```
+
+---
+*Báo cáo được tự động tạo bởi Antigravity AI - B&D Fashion Technical Documentation.*

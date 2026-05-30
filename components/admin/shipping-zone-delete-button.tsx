@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 
 interface ShippingZoneDeleteButtonProps {
   zoneId: string;
-  onDeleted: () => void;
+  onDeleted?: () => void;
 }
 
 export function ShippingZoneDeleteButton({ zoneId, onDeleted }: ShippingZoneDeleteButtonProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,10 +28,11 @@ export function ShippingZoneDeleteButton({ zoneId, onDeleted }: ShippingZoneDele
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result?.message || 'Xóa khu vực thất bại');
+        throw new Error(result?.message || result?.error || 'Xóa khu vực thất bại');
       }
 
-      onDeleted();
+      if (onDeleted) onDeleted();
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Xóa khu vực thất bại');
     } finally {

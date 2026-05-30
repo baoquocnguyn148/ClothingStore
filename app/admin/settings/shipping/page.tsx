@@ -85,7 +85,7 @@ export default async function AdminShippingPage() {
                     <td>
                       <div className="flex gap-2 justify-end">
                         <ShippingZoneModalButton isEdit={true} zone={z} />
-                        <ShippingZoneDeleteButton zoneId={z.id} onDeleted={() => window.location.reload()} />
+                        <ShippingZoneDeleteButton zoneId={z.id} />
                       </div>
                     </td>
                   </tr>

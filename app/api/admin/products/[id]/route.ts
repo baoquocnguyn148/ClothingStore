@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/api/admin-helper';
 import { validateBody } from '@/lib/api/validate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { InventoryService } from '@/lib/server/catalog/inventory.service';
+import { logAdminAction } from '@/lib/server/admin/audit.service';
 
 // GET /api/admin/products/[id]
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
 ) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   try {
@@ -78,7 +79,7 @@ export async function PATCH(
 ) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   const { data, errorResponse: validErr } = await validateBody(request, UpdateProductSchema);
@@ -230,6 +231,18 @@ export async function PATCH(
       }
     }
 
+    await logAdminAction({
+      actorId: user.id,
+      action: 'product.update',
+      entity: 'products',
+      entityId: id,
+      metadata: {
+        fields: Object.keys(data),
+        handle: product.handle,
+        title: product.title,
+      },
+    });
+
     return jsonOk({ product });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Failed';
@@ -245,7 +258,7 @@ export async function DELETE(
 ) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   try {
@@ -268,6 +281,13 @@ export async function DELETE(
       .eq('product_id', id);
 
     if (variantErr) throw variantErr;
+
+    await logAdminAction({
+      actorId: user.id,
+      action: 'product.delete',
+      entity: 'products',
+      entityId: id,
+    });
 
     return jsonOk({ ok: true });
   } catch (e) {

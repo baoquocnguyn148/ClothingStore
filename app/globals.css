@@ -27,7 +27,7 @@
   }
   body {
     @apply bg-white text-black font-sans antialiased selection:bg-black selection:text-white;
-    font-family: var(--font-geist), system-ui, sans-serif;
+    font-family: 'Inter', var(--font-geist), system-ui, sans-serif;
     text-rendering: optimizeLegibility;
   }
   html {
@@ -72,4 +72,21 @@
   .btn-secondary {
     @apply border-2 border-black text-black px-8 py-3.5 rounded-md font-semibold transition-all duration-300 inline-flex items-center justify-center active:scale-[0.98] hover:bg-black hover:text-white hover:shadow-md;
   }
+  
+  .input-base {
+    @apply w-full border border-border px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all;
+  }
+  
+  .skeleton-pulse {
+    @apply animate-pulse bg-gray-200 rounded-md;
+  }
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-page-fade-in {
+  animation: page-fade-in 0.4s ease-out forwards;
 }

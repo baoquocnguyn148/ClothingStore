@@ -19,8 +19,8 @@ const navLinks = [
 function CountBadge({ value }: { value: number }) {
   if (value <= 0) return null;
   return (
-    <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-white shadow-sm">
-      {value}
+    <span className="absolute -right-0.5 -top-0.5 grid min-w-[18px] h-[18px] place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+      {value > 99 ? '99+' : value}
     </span>
   );
 }
@@ -49,12 +49,12 @@ export function Header() {
           {BRAND.name}
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm font-semibold tracking-[-0.01em] md:flex">
+        <nav className="hidden items-center gap-10 text-[13px] font-bold tracking-widest md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="relative py-2 transition-colors hover:text-black/70 after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:scale-x-0 after:bg-black after:transition-transform after:duration-300 hover:after:scale-x-100"
+              className="relative py-2 text-gray-500 transition-colors hover:text-black after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:origin-center after:scale-x-0 after:bg-black after:transition-transform after:duration-300 hover:after:scale-x-100"
             >
               {link.label}
             </Link>
@@ -64,14 +64,14 @@ export function Header() {
         <div className="flex items-center gap-1 md:gap-2">
           <Link
             href="/search"
-            className="rounded-full p-2.5 transition-all hover:bg-black/5"
+            className="rounded-full p-2 transition-all hover:bg-black/5 text-black flex items-center justify-center"
             aria-label="Tìm kiếm"
           >
             <Search size={20} />
           </Link>
           <Link
             href="/account/wishlist"
-            className="relative hidden rounded-full p-2.5 transition-all hover:bg-black/5 sm:block"
+            className="relative hidden rounded-full p-2 transition-all hover:bg-black/5 sm:flex items-center justify-center"
             aria-label="Yêu thích"
           >
             <Heart size={20} />
@@ -80,7 +80,7 @@ export function Header() {
           <button
             type="button"
             onClick={openCart}
-            className="relative rounded-full p-2.5 transition-all hover:bg-black/5"
+            className="relative rounded-full p-2 transition-all hover:bg-black/5 flex items-center justify-center"
             aria-label="Giỏ hàng"
           >
             <ShoppingCart size={20} />

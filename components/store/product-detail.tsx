@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import type { Product } from '@/lib/commerce/types';
 import { formatPrice } from '@/lib/commerce/format';
 import {
@@ -171,9 +172,9 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
       {/* Breadcrumb */}
       <nav className="border-b border-border bg-white/95 px-4 py-4 text-sm backdrop-blur md:px-8">
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400 md:text-base">
-          <Link href="/" className="transition-colors hover:text-black">Home</Link>
+          <Link href="/" className="transition-colors hover:text-black">Trang chủ</Link>
           <ChevronRight size={14} className="text-gray-300" />
-          <Link href={`/categories/${product.category}`} className="transition-colors hover:text-black">
+          <Link href={`/collections?category=${product.category}`} className="transition-colors hover:text-black">
             {categoryLabel(product.category)}
           </Link>
           <ChevronRight size={14} className="text-gray-300" />
@@ -267,7 +268,7 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
 
         {/* Product info sidebar */}
         <aside className="bg-[#fbfbfa] px-5 py-8 md:px-10 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto xl:px-14">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">BD-ASIA</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">{BRAND.name}</p>
           <div className="mb-6 flex items-start justify-between gap-4">
             <h1 className="max-w-xl text-[28px] font-medium leading-tight tracking-[-0.01em] md:text-[34px]">
               {product.title}

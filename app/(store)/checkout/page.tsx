@@ -205,7 +205,7 @@ export default function CheckoutPage() {
                   onChange={(event) => setProvider(event.target.value as PaymentProvider)}
                   className="w-full rounded-lg border border-border bg-gray-50/50 px-4 py-3.5 text-[15px] outline-none transition-colors focus:border-black focus:bg-white focus:ring-1 focus:ring-black appearance-none cursor-pointer"
                 >
-                  <option value="cod">COD — Thanh toán khi nhận hàng (khuyên dùng để test)</option>
+                  <option value="cod">COD — Thanh toán khi nhận hàng</option>
                   <option value="vnpay">VNPay</option>
                   <option value="momo">MoMo</option>
                   <option value="zalopay">ZaloPay (demo)</option>
@@ -239,7 +239,7 @@ export default function CheckoutPage() {
                     Đang xử lý đơn hàng...
                   </>
                 ) : (
-                  `Thanh toán an toàn • ${formatPrice(displayTotal)}`
+                  `Thanh toán • ${formatPrice(displayTotal)}`
                 )}
               </button>
             </div>

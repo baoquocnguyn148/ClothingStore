@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
+  BarChart3,
+  Brain,
   FilePenLine,
   ShoppingBag,
   Package,
@@ -13,6 +15,7 @@ import {
   Star,
   FileText,
   Users,
+  ClipboardList,
   Store,
   Settings,
   ChevronRight,
@@ -25,6 +28,21 @@ const NAV_ITEMS = [
     href: '/admin',
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    label: 'MIS Reports',
+    href: '/admin/reports',
+    icon: BarChart3,
+  },
+  {
+    label: 'DSS',
+    href: '/admin/decision-support',
+    icon: Brain,
+  },
+  {
+    label: 'ESS',
+    href: '/admin/executive',
+    icon: LayoutDashboard,
   },
   {
     label: 'Nội dung Home',
@@ -77,6 +95,11 @@ const NAV_ITEMS = [
     icon: Users,
   },
   {
+    label: 'CRM',
+    href: '/admin/crm',
+    icon: ClipboardList,
+  },
+  {
     label: 'Cửa hàng',
     href: '/admin/settings',
     icon: Store,
@@ -88,12 +111,12 @@ const NAV_ITEMS = [
   },
 ];
 
+
 export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="admin-sidebar">
-      {/* Logo */}
       <div className="admin-sidebar-logo">
         <Link href="/admin" className="admin-logo-link">
           <span className="admin-logo-text">B&amp;D</span>
@@ -101,7 +124,6 @@ export default function AdminSidebar() {
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav className="admin-nav">
         {NAV_ITEMS.map((item) => {
           const isActive = item.exact
@@ -123,10 +145,9 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Back to store */}
       <div className="admin-sidebar-footer">
         <Link href="/" className="admin-back-link">
-          ← Về cửa hàng
+          Về cửa hàng
         </Link>
       </div>
     </aside>

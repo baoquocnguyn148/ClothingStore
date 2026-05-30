@@ -13,9 +13,19 @@ export async function apiFetch<T>(
     credentials: 'include',
   });
 
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(json.error ?? 'Request failed');
+  let json: any = null;
+  try {
+    json = await res.json();
+  } catch (e) {
+    // ignore JSON parse errors
   }
+
+  if (!res.ok) {
+    const err = new Error((json && json.error) || res.statusText || 'Request failed');
+    // attach HTTP status for callers to handle auth vs other errors
+    (err as any).status = res.status;
+    throw err;
+  }
+
   return json as T;
 }

@@ -6,23 +6,22 @@ import { BRAND } from '@/lib/brand';
 import { formatPrice } from '@/lib/commerce/format';
 import { USE_SUPABASE } from '@/lib/config';
 import { apiFetch } from '@/lib/api/client';
-import { getSession, clearSession } from '@/lib/auth/session';
-import { createClient } from '@/lib/supabase/client';
+import { getSession } from '@/lib/auth/session';
 import { useWishlist } from '@/lib/wishlist/wishlist-context';
+import { Package, Heart, MapPin, ChevronRight, ArrowRight } from 'lucide-react';
 
-const statusLabel: Record<string, string> = {
-  pending_payment: 'Chờ thanh toán',
-  paid: 'Đã thanh toán',
-  confirmed: 'Đã xác nhận',
-  shipping: 'Đang giao',
-  delivered: 'Đã giao',
-  cancelled: 'Đã hủy',
-  pending: 'Chờ xử lý',
+const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
+  pending_payment: { label: 'Chờ thanh toán', bg: 'bg-orange-100', text: 'text-orange-700' },
+  paid: { label: 'Đã thanh toán', bg: 'bg-blue-100', text: 'text-blue-700' },
+  confirmed: { label: 'Đã xác nhận', bg: 'bg-indigo-100', text: 'text-indigo-700' },
+  shipping: { label: 'Đang giao', bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  delivered: { label: 'Đã giao', bg: 'bg-green-100', text: 'text-green-700' },
+  cancelled: { label: 'Đã hủy', bg: 'bg-red-100', text: 'text-red-700' },
+  pending: { label: 'Chờ xử lý', bg: 'bg-gray-100', text: 'text-gray-700' },
 };
 
 export default function AccountDashboardPage() {
   const { count: wishlistCount } = useWishlist();
-  const [name, setName] = useState('');
   const [orders, setOrders] = useState<Array<{
     id: string;
     order_number: string;
@@ -31,6 +30,7 @@ export default function AccountDashboardPage() {
     total: number;
   }>>([]);
   const [addressCount, setAddressCount] = useState(0);
+  const [tier, setTier] = useState('Member');
 
   useEffect(() => {
     async function load() {
@@ -47,7 +47,7 @@ export default function AccountDashboardPage() {
             }>;
             addresses: unknown[];
           }>('/me');
-          setName(data.profile?.full_name ?? '');
+          if (data.profile?.membership_tier) setTier(data.profile.membership_tier);
           setAddressCount(data.addresses?.length ?? 0);
           setOrders(
             (data.orders ?? []).map((o) => ({
@@ -59,12 +59,11 @@ export default function AccountDashboardPage() {
             }))
           );
         } catch {
-          // unauthorized
+          // unauth
         }
       } else {
         const user = getSession();
         if (user) {
-          setName(user.name);
           setAddressCount(user.addresses.length);
           setOrders(
             user.orders.map((o) => ({
@@ -81,77 +80,130 @@ export default function AccountDashboardPage() {
     load();
   }, []);
 
-  const handleLogout = async () => {
-    if (USE_SUPABASE) {
-      await createClient().auth.signOut();
-    } else {
-      clearSession();
-    }
-    window.location.href = '/';
-  };
-
   return (
-    <div>
-      <h1 className="text-heading-lg uppercase mb-2">Tài khoản</h1>
-      <p className="text-secondary text-sm mb-8">
-        Xin chào, <strong className="text-black">{name}</strong>
-      </p>
-
-      <section className="border border-border p-6 mb-6">
-        <h2 className="font-bold uppercase mb-2">{BRAND.fullName} Membership</h2>
-        <Link href="/pages/membership" className="text-sm font-bold underline">
-          Tìm hiểu thêm
-        </Link>
-      </section>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="border border-border p-4">
-          <p className="text-2xl font-bold">{orders.length}</p>
-          <p className="text-xs text-secondary uppercase">Đơn hàng</p>
-          <Link href="/account/orders" className="text-xs underline mt-2 inline-block">
-            Xem tất cả
-          </Link>
-        </div>
-        <div className="border border-border p-4">
-          <p className="text-2xl font-bold">{wishlistCount}</p>
-          <p className="text-xs text-secondary uppercase">Yêu thích</p>
-          <Link href="/account/wishlist" className="text-xs underline mt-2 inline-block">
-            Xem danh sách
-          </Link>
-        </div>
-        <div className="border border-border p-4">
-          <p className="text-2xl font-bold">{addressCount}</p>
-          <p className="text-xs text-secondary uppercase">Địa chỉ</p>
-          <Link href="/account/addresses" className="text-xs underline mt-2 inline-block">
-            Quản lý
-          </Link>
+    <div className="animate-page-fade-in">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-extrabold uppercase tracking-tight">Tổng quan</h1>
+          <p className="text-gray-500 mt-1">Quản lý hoạt động mua sắm của bạn</p>
         </div>
       </div>
 
-      {orders.length > 0 && (
-        <section className="border border-border p-6 mb-6">
-          <h2 className="font-bold uppercase mb-4">Đơn hàng gần đây</h2>
-          <ul className="space-y-3">
-            {orders.slice(0, 3).map((order) => (
-              <li
-                key={order.id}
-                className="flex justify-between text-sm border-b border-border pb-3 last:border-0"
-              >
-                <span>
-                  #{order.order_number} · {order.date}
-                </span>
-                <span>
-                  {statusLabel[order.status] ?? order.status} · {formatPrice(order.total)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* Membership Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-900 to-black text-white p-6 md:p-8 mb-8 shadow-md">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl font-bold uppercase">{BRAND.fullName} {tier}</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-semibold tracking-wider backdrop-blur-md uppercase">
+                VIP
+              </span>
+            </div>
+            <p className="text-gray-400 max-w-md">
+              Tích lũy thêm chi tiêu để nâng hạng và mở khóa các đặc quyền mua sắm độc quyền.
+            </p>
+          </div>
+          <Link 
+            href="/pages/membership" 
+            className="inline-flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-lg font-bold text-sm transition-transform hover:scale-105 active:scale-95 shrink-0 w-fit"
+          >
+            Đặc quyền của bạn
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+        {/* Decorative elements */}
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
+        <div className="absolute right-20 -bottom-20 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+      </div>
 
-      <button type="button" onClick={handleLogout} className="btn-secondary">
-        Đăng xuất
-      </button>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+        <Link href="/account/orders" className="group p-5 rounded-2xl border border-border bg-gray-50/50 hover:bg-white hover:border-black/20 hover:shadow-sm transition-all">
+          <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <Package size={20} />
+          </div>
+          <p className="text-3xl font-black mb-1">{orders.length}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Đơn hàng</p>
+            <ChevronRight size={16} className="text-gray-400 group-hover:text-black transition-colors" />
+          </div>
+        </Link>
+        
+        <Link href="/account/wishlist" className="group p-5 rounded-2xl border border-border bg-gray-50/50 hover:bg-white hover:border-black/20 hover:shadow-sm transition-all">
+          <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <Heart size={20} className="fill-current" />
+          </div>
+          <p className="text-3xl font-black mb-1">{wishlistCount}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Yêu thích</p>
+            <ChevronRight size={16} className="text-gray-400 group-hover:text-black transition-colors" />
+          </div>
+        </Link>
+        
+        <Link href="/account/addresses" className="group p-5 rounded-2xl border border-border bg-gray-50/50 hover:bg-white hover:border-black/20 hover:shadow-sm transition-all">
+          <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <MapPin size={20} />
+          </div>
+          <p className="text-3xl font-black mb-1">{addressCount}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Địa chỉ</p>
+            <ChevronRight size={16} className="text-gray-400 group-hover:text-black transition-colors" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Recent Orders */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold uppercase tracking-wide">Đơn hàng gần đây</h2>
+          {orders.length > 0 && (
+            <Link href="/account/orders" className="text-sm font-semibold text-gray-500 hover:text-black hover:underline underline-offset-4 transition-colors">
+              Xem tất cả
+            </Link>
+          )}
+        </div>
+        
+        {orders.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-gray-300 rounded-2xl bg-gray-50">
+            <Package size={40} className="mx-auto text-gray-300 mb-4" />
+            <p className="font-semibold text-gray-600 mb-2">Chưa có đơn hàng nào</p>
+            <p className="text-sm text-gray-400 mb-6">Khám phá các sản phẩm mới nhất của chúng tôi</p>
+            <Link href="/collections" className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-black text-white font-semibold text-sm transition-all hover:bg-neutral-800 hover:scale-105">
+              Mua sắm ngay
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.slice(0, 3).map((order) => {
+              const conf = statusConfig[order.status] || { label: order.status, bg: 'bg-gray-100', text: 'text-gray-700' };
+              
+              return (
+                <Link
+                  href={`/account/orders/${order.id}`}
+                  key={order.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-border hover:border-black/30 hover:shadow-sm transition-all group"
+                >
+                  <div>
+                    <p className="font-bold text-lg mb-1 group-hover:text-blue-600 transition-colors">
+                      #{order.order_number}
+                    </p>
+                    <p className="text-sm text-gray-500">{order.date}</p>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="font-bold tabular-nums mb-1">{formatPrice(order.total)}</p>
+                      <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${conf.bg} ${conf.text}`}>
+                        {conf.label}
+                      </span>
+                    </div>
+                    <ChevronRight size={20} className="text-gray-300 group-hover:text-black transition-colors hidden sm:block" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

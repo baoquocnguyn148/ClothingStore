@@ -4,6 +4,7 @@ import { jsonOk, jsonError, isSupabaseMode } from '@/lib/api/response';
 import { requireAdmin } from '@/lib/api/admin-helper';
 import { validateBody } from '@/lib/api/validate';
 import { OrderService } from '@/lib/server/order/order.service';
+import { logAdminAction } from '@/lib/server/admin/audit.service';
 
 const StatusSchema = z.object({
   status: z.enum(['draft', 'pending_payment', 'paid', 'confirmed', 'shipping', 'delivered', 'cancelled', 'refunded']),
@@ -16,7 +17,7 @@ export async function PATCH(
 ) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   const { data, errorResponse: validErr } = await validateBody(request, StatusSchema);
@@ -25,6 +26,13 @@ export async function PATCH(
   try {
     const { id } = await params;
     await new OrderService().updateOrderStatus(id, data.status, data.note);
+    await logAdminAction({
+      actorId: user.id,
+      action: 'order.status_update',
+      entity: 'orders',
+      entityId: id,
+      metadata: { status: data.status, note: data.note ?? null },
+    });
     return jsonOk({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Failed';

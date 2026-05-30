@@ -1,0 +1,198 @@
+import Link from 'next/link';
+import { AlertTriangle, Brain, Package, Ticket, Users } from 'lucide-react';
+import { isSupabaseMode } from '@/lib/api/response';
+import { InformationSystemService } from '@/lib/server/admin/information-system.service';
+
+export const metadata = { title: 'DSS - Admin B&D' };
+export const dynamic = 'force-dynamic';
+
+function formatVND(amount: number) {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+}
+
+function formatDate(value: string | null) {
+  return value ? new Date(value).toLocaleDateString('vi-VN') : '-';
+}
+
+export default async function AdminDecisionSupportPage() {
+  const isSupa = isSupabaseMode();
+  let data: Awaited<ReturnType<InformationSystemService['getDecisionSupport']>> | null = null;
+  let loadError: string | null = null;
+
+  if (!isSupa) {
+    loadError = 'Ket noi Supabase de dung DSS.';
+  } else {
+    try {
+      data = await new InformationSystemService().getDecisionSupport();
+    } catch (e) {
+      loadError = e instanceof Error ? e.message : 'Khong tai duoc DSS.';
+    }
+  }
+
+  return (
+    <div className="admin-page">
+      <div className="admin-page-header">
+        <div>
+          <h1 className="admin-page-title">Decision Support</h1>
+          <p className="admin-page-subtitle">Goi y hanh dong dua tren khach hang, san pham, ton kho va CRM.</p>
+        </div>
+        <div className="admin-page-actions">
+          <Link href="/admin/crm/campaigns" className="admin-btn admin-btn-primary">
+            Create campaign
+          </Link>
+        </div>
+      </div>
+
+      {loadError && (
+        <div className="admin-notice">
+          <AlertTriangle size={16} />
+          {loadError}
+        </div>
+      )}
+
+      {data && (
+        <>
+          <div className="admin-stat-grid">
+            <Stat icon={Users} label="VIP candidates" value={data.customerSegments.vipCustomers.length} />
+            <Stat icon={Brain} label="At-risk customers" value={data.customerSegments.atRiskCustomers.length} />
+            <Stat icon={Package} label="Product actions" value={data.productSuggestions.length} />
+            <Stat icon={Ticket} label="Urgent CRM" value={data.crmPriorities.urgentTickets.length + data.crmPriorities.overdueTasks.length} />
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-3">
+            <CustomerSegment title="VIP care" rows={data.customerSegments.vipCustomers} />
+            <CustomerSegment title="Win-back" rows={data.customerSegments.atRiskCustomers} />
+            <CustomerSegment title="New no order" rows={data.customerSegments.newNoOrderCustomers} />
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <section className="admin-card">
+              <h2 className="admin-card-title">Product recommendations</h2>
+              {data.productSuggestions.length === 0 ? (
+                <div className="admin-empty">Chua co goi y san pham.</div>
+              ) : (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Action</th>
+                        <th>Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.productSuggestions.map((item) => (
+                        <tr key={`${item.sku}-${item.action}`}>
+                          <td>{item.productTitle}</td>
+                          <td className="admin-table-mono">{item.sku}</td>
+                          <td>{item.action}</td>
+                          <td className="text-slate-400">{item.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="admin-card">
+              <h2 className="admin-card-title">CRM priorities</h2>
+              <div className="space-y-4">
+                <PriorityList title="Overdue tasks" rows={data.crmPriorities.overdueTasks} type="task" />
+                <PriorityList title="Urgent tickets" rows={data.crmPriorities.urgentTickets} type="ticket" />
+              </div>
+            </section>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number }>; label: string; value: number }) {
+  return (
+    <div className="admin-stat-card">
+      <div className="admin-stat-icon">
+        <Icon size={22} />
+      </div>
+      <div className="admin-stat-body">
+        <p className="admin-stat-value">{value}</p>
+        <p className="admin-stat-label">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function CustomerSegment({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<{
+    userId: string;
+    name: string;
+    phone: string | null;
+    totalSpent: number;
+    orderCount: number;
+    lastOrderAt: string | null;
+    recommendation: string;
+    rfmScore?: number;
+    rfmSegment?: string;
+    recencyDays?: number | null;
+  }>;
+}) {
+  return (
+    <section className="admin-card">
+      <h2 className="admin-card-title">{title}</h2>
+      {rows.length === 0 ? (
+        <div className="admin-empty">No customers.</div>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <div key={row.userId} className="rounded-xl border border-border p-3 text-sm">
+              <Link href={`/admin/customers/${row.userId}`} className="font-medium hover:underline">
+                {row.name}
+              </Link>
+              <p className="text-xs text-slate-400">
+                {row.phone || 'No phone'} · {row.orderCount} orders · {formatVND(row.totalSpent)}
+              </p>
+              <p className="mt-2 text-xs text-slate-300">
+                Last order: {formatDate(row.lastOrderAt)} · {row.recommendation}
+              </p>
+              {row.rfmScore !== undefined && (
+                <p className="mt-1 text-xs text-slate-500">
+                  RFM {row.rfmScore} · {row.rfmSegment} · recency {row.recencyDays ?? '-'}d
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PriorityList({ title, rows, type }: { title: string; rows: any[]; type: 'task' | 'ticket' }) {
+  return (
+    <div className="rounded-xl border border-border p-4">
+      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-sm text-slate-400">No items.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.slice(0, 8).map((row) => (
+            <Link
+              key={row.id}
+              href={`/admin/customers/${row.customer_user_id}`}
+              className="block rounded-lg bg-slate-950 p-3 text-sm hover:bg-slate-900"
+            >
+              <p className="font-medium">{type === 'task' ? row.title : row.subject}</p>
+              <p className="text-xs text-slate-400">{row.priority} · {type === 'task' ? formatDate(row.due_at) : row.status}</p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

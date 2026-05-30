@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/api/admin-helper';
 import { validateBody, validateQuery } from '@/lib/api/validate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { InventoryService } from '@/lib/server/catalog/inventory.service';
+import { logAdminAction } from '@/lib/server/admin/audit.service';
 
 const QuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -17,7 +18,7 @@ const QuerySchema = z.object({
 export async function GET(request: NextRequest) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   const { data: query, errorResponse: validErr } = validateQuery(request, QuerySchema);
@@ -110,7 +111,7 @@ const CreateProductSchema = z.object({
 export async function POST(request: NextRequest) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   const { data, errorResponse: validErr } = await validateBody(request, CreateProductSchema);
@@ -200,6 +201,14 @@ export async function POST(request: NextRequest) {
       );
       if (assignErr) throw assignErr;
     }
+
+    await logAdminAction({
+      actorId: user.id,
+      action: 'product.create',
+      entity: 'products',
+      entityId: product.id,
+      metadata: { handle: product.handle, title: product.title, published: product.published },
+    });
 
     return jsonOk({ product }, 201);
   } catch (e) {

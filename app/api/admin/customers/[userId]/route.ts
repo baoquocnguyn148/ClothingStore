@@ -4,6 +4,7 @@ import { jsonOk, jsonError, isSupabaseMode } from '@/lib/api/response';
 import { requireAdmin } from '@/lib/api/admin-helper';
 import { validateBody } from '@/lib/api/validate';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logAdminAction } from '@/lib/server/admin/audit.service';
 
 const UpdateCustomerSchema = z
   .object({
@@ -44,10 +45,16 @@ export async function PATCH(
       .single();
 
     if (error) throw error;
+    await logAdminAction({
+      actorId: admin.user.id,
+      action: 'customer.update',
+      entity: 'profiles',
+      entityId: userId,
+      metadata: update,
+    });
 
     return jsonOk({ ok: true });
   } catch (e) {
     return jsonError(e instanceof Error ? e.message : 'Failed', 500);
   }
 }
-

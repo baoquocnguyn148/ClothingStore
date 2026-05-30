@@ -11,6 +11,10 @@ export function CartDrawer() {
   const { lines, subtotal, isOpen, closeCart, updateQuantity, removeLine } = useCart();
   const totalQuantity = lines.reduce((total, item) => total + item.quantity, 0);
 
+  const FREE_SHIPPING_THRESHOLD = 1500000;
+  const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const remaining = FREE_SHIPPING_THRESHOLD - subtotal;
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
       <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
@@ -114,7 +118,28 @@ export function CartDrawer() {
               ))}
             </ul>
 
-            <div className="border-t border-border px-1 pt-5">
+            <div className="border-t border-border px-4 py-5 bg-gray-50/50">
+              {/* Free Shipping Progress */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2 text-sm">
+                  {progress >= 100 ? (
+                    <p className="font-bold text-emerald-600 flex items-center gap-1.5">
+                      🎉 Bạn đã đạt freeship!
+                    </p>
+                  ) : (
+                    <p className="text-gray-600">
+                      Mua thêm <strong className="text-black">{formatPrice(remaining)}</strong> để được freeship
+                    </p>
+                  )}
+                </div>
+                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 ease-out ${progress >= 100 ? 'bg-emerald-500' : 'bg-black'}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between text-sm text-secondary">
                 <span>Tổng số lượng</span>
                 <span className="font-medium">{totalQuantity}</span>
@@ -129,9 +154,9 @@ export function CartDrawer() {
               <Link
                 href="/checkout"
                 onClick={closeCart}
-                className="mt-4 mb-1 inline-flex h-[52px] w-full items-center justify-center rounded-md bg-black px-4 text-[15px] font-semibold tracking-wide text-white transition-all hover:bg-neutral-800 hover:shadow-lg active:scale-[0.98]"
+                className="mt-5 inline-flex h-14 w-full items-center justify-center rounded-xl bg-black px-4 text-base font-bold tracking-wide text-white transition-all hover:bg-neutral-800 hover:shadow-xl hover:shadow-black/10 active:scale-[0.98]"
               >
-                Thanh toán
+                Tiến hành thanh toán
               </Link>
             </div>
           </>
