@@ -11,7 +11,9 @@ import { useCart } from '@/lib/cart/cart-context';
 import { Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
-export default function LoginPage() {
+import { Suspense } from 'react';
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshCart } = useCart();
@@ -185,5 +187,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-black rounded-full animate-spin"/></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
