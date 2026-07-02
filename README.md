@@ -4,6 +4,8 @@ B&D Fashion là một nền tảng thương mại điện tử toàn diện, đ�
 
 Dự án này không chỉ là một trang web bán hàng (Storefront) mà còn bao gồm một hệ thống thông tin quản lý doanh nghiệp tích hợp, bao gồm các phân hệ TPS, MIS, DSS, ESS và CRM.
 
+**🌐 Live Demo:** [https://clothing-store-82ef.vercel.app/](https://clothing-store-82ef.vercel.app/)
+
 ---
 
 ## 🛠 Technology Stack (Công nghệ sử dụng)
