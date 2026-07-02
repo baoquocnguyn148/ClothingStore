@@ -1,0 +1,58 @@
+@startuml DFD_L1
+skinparam rectangle {
+  BackgroundColor #EFF6FF
+  BorderColor #3B82F6
+}
+
+' External Entities
+actor "Khách hàng" as C
+actor "Admin Staff" as A
+actor "Ban GĐ" as E
+actor "Cổng TT" as P
+
+' Processes (tương ứng API routes thực tế)
+rectangle "P1\nOrder Processing\n(TPS)\n/api/v1/orders\n/api/v1/orders/[id]/pay\n/api/webhooks/*" as P1 #DBEAFE
+rectangle "P2\nInventory Management\n(TPS/MIS)\n/api/admin/inventory\n/api/admin/stock-alerts" as P2 #DCFCE7
+rectangle "P3\nProduct Catalog\n/api/admin/products\n/api/v1/products" as P3 #FEF9C3
+rectangle "P4\nCRM & Marketing\n/api/admin/crm/*\n/api/admin/promotions\n/api/admin/customers" as P4 #FCE7F3
+rectangle "P5\nMIS Reporting\n/api/admin/dashboard\n/api/admin/reports\n(Views: mis_daily_sales_summary\n mis_customer_metrics)" as P5 #F3E8FF
+
+' Data Stores (Supabase tables thực tế)
+database "D1: orders\norder_items\norder_status_logs\npayments\npayment_events" as D1
+database "D2: product_variants\ninventory_movements\nstock_alert_config" as D2
+database "D3: products\ncollections\nproduct_images\ntags" as D3
+database "D4: profiles\naddresses\nwishlist_items\ncarts / cart_items" as D4
+database "D5: crm_notes\ncrm_tasks\ncrm_tickets\ncrm_campaigns\ncrm_segments" as D5
+database "D6: promotions\npromotion_usages\nshipping_zones" as D6
+database "D7: admin_audit_logs\nadmin_notifications" as D7
+
+C --> P1 : Tạo đơn, thanh toán
+P1 --> D1 : INSERT order + items
+P1 --> D2 : reserve_order_stock() RPC
+P1 --> D4 : đọc cart_items
+P --> P1 : IPN Webhook (paid/failed)
+P1 --> D7 : log admin_audit_logs
+P1 --> C : Redirect, email xác nhận
+
+A --> P2 : Điều chỉnh kho, nhập hàng
+P2 --> D2 : UPDATE stock_qty\nINSERT inventory_movements
+D2 --> P2 : Đọc tồn kho hiện tại
+P2 --> D7 : INSERT admin_notifications\n(check_low_stock trigger)
+P2 --> A : Cảnh báo Low/Out of stock
+
+A --> P3 : CRUD sản phẩm, upload ảnh
+P3 --> D3 : Quản lý catalog
+P3 --> A : Danh sách sản phẩm
+
+A --> P4 : Quản lý KH, CRM, campaigns
+P4 --> D5 : CRUD crm_notes/tasks/tickets
+P4 --> D6 : Quản lý khuyến mãi
+C --> P4 : apply_promotion RPC\n(nhập mã giảm giá)
+P4 --> C : Tích hạng thành viên\n(update_membership_tier trigger)
+
+D1 --> P5 : Dữ liệu đơn hàng
+D4 --> P5 : Dữ liệu khách hàng
+P5 --> E : KPI Dashboard\nRevenue Chart\nRFM Reports
+P5 --> A : MIS Dashboard
+
+@enduml

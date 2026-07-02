@@ -1,0 +1,55 @@
+@startuml SEQ_Payment
+skinparam sequence {
+  ArrowColor #2563EB
+  ParticipantBackgroundColor #EFF6FF
+  LifeLineBorderColor #93C5FD
+}
+
+actor "Khách hàng" as C
+participant "Browser\nNext.js" as B
+participant "POST /api/v1/orders" as API1
+participant "POST /api/v1/orders\n/[id]/pay" as API2
+participant "PaymentService" as PS
+participant "VNPay/MoMo\n/ZaloPay" as GW
+participant "POST /api/webhooks\n/[provider]" as HOOK
+participant "Supabase DB" as DB
+
+C -> B : Bấm "Đặt hàng"
+B -> API1 : POST {cartItems, address, promoCode}
+API1 -> DB : INSERT orders (status=pending_payment)
+API1 -> DB : INSERT order_items
+API1 -> DB : generate_order_number() → BD260628xxxxx
+API1 -> B : { orderId }
+
+B -> API2 : POST { provider: "vnpay" }
+API2 -> PS : createPayment(orderId, "vnpay")
+PS -> DB : INSERT payments (status=pending, transaction_ref)
+PS -> GW : Tạo payment URL (HMAC signature)
+GW -> PS : paymentUrl
+PS -> API2 : { payment, paymentUrl }
+API2 -> B : { paymentUrl }
+
+B -> C : Redirect → paymentUrl
+C -> GW : Hoàn tất thanh toán
+GW -> HOOK : IPN Webhook POST\n{ gateway_event_id, status: "completed" }
+
+HOOK -> DB : SELECT payment_events WHERE\ngateway_event_id = ? (idempotency check)
+alt Chưa xử lý
+  HOOK -> DB : INSERT payment_events (processed=false)
+  HOOK -> DB : UPDATE payments SET status='completed'
+  HOOK -> DB : UPDATE orders SET status='paid'
+  HOOK -> DB : reserve_order_stock() RPC\n(atomic stock deduction)
+  HOOK -> DB : INSERT inventory_movements\n(delta=-qty, reason='order')
+  HOOK -> DB : INSERT admin_audit_logs
+  HOOK -> DB : Trigger: update_membership_tier()
+  HOOK -> DB : UPDATE payment_events SET processed=true
+  HOOK -> GW : HTTP 200 OK
+else Đã xử lý (duplicate IPN)
+  HOOK -> GW : HTTP 200 OK (no-op)
+end
+
+C -> B : Redirect /checkout/return
+B -> B : GET /api/v1/orders/[id]\n(kiểm tra status)
+B -> C : Hiển thị /checkout/success
+
+@enduml

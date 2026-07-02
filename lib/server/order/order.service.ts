@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { CartService } from '@/lib/server/cart/cart.service';
 import { ShippingService } from './shipping.service';
 import { PromotionService } from '../promotion/promotion.service';
+import { EmailService } from '@/lib/server/email/email.service';
 
 export interface CreateOrderInput {
   userId: string;
@@ -61,6 +62,17 @@ export class OrderService {
 
     const orderNumber = `BD${Date.now().toString().slice(-10)}`;
 
+    for (const item of items) {
+      const { data: variant } = await this.db
+        .from('product_variants')
+        .select('stock_qty, is_active')
+        .eq('id', item.variantId)
+        .single();
+      if (!variant?.is_active || (variant.stock_qty ?? 0) < item.quantity) {
+        throw new Error(`Sản phẩm "${item.title}" không đủ tồn kho`);
+      }
+    }
+
     const { data: order, error } = await this.db
       .from('orders')
       .insert({
@@ -101,19 +113,6 @@ export class OrderService {
       note: 'Order created',
     });
 
-    // Keep cart until payment succeeds (see markOrderPaid).
-
-    for (const item of items) {
-      const { data: variant } = await this.db
-        .from('product_variants')
-        .select('stock_qty, is_active')
-        .eq('id', item.variantId)
-        .single();
-      if (!variant?.is_active || (variant.stock_qty ?? 0) < item.quantity) {
-        throw new Error(`Sản phẩm "${item.title}" không đủ tồn kho`);
-      }
-    }
-
     return order;
   }
 
@@ -142,6 +141,8 @@ export class OrderService {
       order.promotion_id,
       order.discount_amount ?? 0
     );
+
+    await this.sendConfirmationEmailSafe(orderId);
 
     return { alreadyPaid: false as const };
   }
@@ -195,7 +196,41 @@ export class OrderService {
 
     await this.finalizePlacedOrder(orderId, order.user_id, order.promotion_id, order.discount_amount);
 
+    await this.sendConfirmationEmailSafe(orderId);
+
     return { payment, alreadyConfirmed: false as const };
+  }
+
+  private async sendConfirmationEmailSafe(orderId: string) {
+    try {
+      const { data: order } = await this.db
+        .from('orders')
+        .select(`*, order_items(*), profiles(full_name, email:user_id)`)
+        .eq('id', orderId)
+        .single();
+
+      if (order) {
+        const address = order.shipping_address as { email?: string; name?: string };
+        const email = address?.email || '';
+        const name = address?.name || 'Quý khách';
+
+        if (email) {
+          await new EmailService().sendOrderConfirmation({
+            toEmail: email,
+            customerName: name,
+            orderNumber: order.order_number,
+            orderTotal: order.total,
+            items: (order.order_items ?? []).map((i: any) => ({
+              title: i.product_title,
+              quantity: i.quantity,
+              price: i.unit_price,
+            })),
+          });
+        }
+      }
+    } catch (emailErr) {
+      console.error('[OrderService] Email send failed:', emailErr);
+    }
   }
 
   private async finalizePlacedOrder(

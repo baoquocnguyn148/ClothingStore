@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { ProductFilters } from '@/lib/commerce/types';
 import { mapDbProduct, mapDbCollection, mapDbBlogPost, mapDbPolicy, PRODUCT_SELECT } from './mapper';
+import { mockPolicies } from '@/data/mock/policies';
 
 export class CatalogService {
   private db = createAdminClient();
@@ -137,7 +138,11 @@ export class CatalogService {
       .eq('published', true)
       .single();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      const mock = mockPolicies.find(p => p.slug === slug);
+      if (mock) return mock;
+      return null;
+    }
     return mapDbPolicy(data);
   }
 
@@ -147,7 +152,7 @@ export class CatalogService {
       .select('*')
       .eq('published', true);
 
-    if (error) throw error;
-    return (data ?? []).map(mapDbPolicy);
+    if (error || !data || data.length === 0) return mockPolicies;
+    return data.map(mapDbPolicy);
   }
 }

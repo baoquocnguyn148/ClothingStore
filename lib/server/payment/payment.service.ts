@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildVNPayUrl } from './vnpay.adapter';
 import { createMoMoPayment } from './momo.adapter';
+import { createZaloPayOrder } from './zalopay.adapter';
 import { OrderService } from '@/lib/server/order/order.service';
 import type { PaymentProviderType } from './types';
 
@@ -60,11 +61,16 @@ export class PaymentService {
       });
       paymentUrl = result?.payUrl ?? null;
     } else if (provider === 'zalopay') {
-      paymentUrl = `${baseUrl}/checkout/success?order=${order.id}&provider=zalopay&demo=1`;
+      const result = await createZaloPayOrder({
+        orderId: order.id,
+        amount: order.total,
+        orderInfo: `Thanh toan don hang ${order.order_number}`,
+      });
+      paymentUrl = result?.orderUrl ?? null;
     }
 
     if (!paymentUrl) {
-      throw new Error(`Payment provider ${provider} is not configured`);
+      throw new Error(`Payment provider ${provider} is not configured or failed to generate URL`);
     }
 
     const { data: payment, error: payErr } = await this.db

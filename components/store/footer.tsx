@@ -49,13 +49,13 @@ export function Footer() {
               </button>
             </form>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="Instagram">
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="Instagram">
                 <Instagram size={18} />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="Facebook">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="Facebook">
                 <Facebook size={18} />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="Youtube">
+              <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="Youtube">
                 <Youtube size={18} />
               </a>
             </div>
@@ -98,8 +98,8 @@ export function Footer() {
                   </li>
                 ))}
                 <li className="pt-2">
-                  <Link href="/about-us#stores" className="font-bold text-white uppercase text-xs tracking-wider border-b border-white pb-0.5 hover:text-gray-300 hover:border-gray-300 transition-colors">
-                    Xem tất cả hệ thống
+                  <Link href="/about-us#stores" className="font-bold text-white text-xs tracking-wider border-b border-white pb-0.5 hover:text-gray-300 hover:border-gray-300 transition-colors">
+                    XEM TẤT CẢ HỆ THỐNG
                   </Link>
                 </li>
               </ul>

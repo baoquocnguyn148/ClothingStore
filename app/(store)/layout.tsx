@@ -2,6 +2,7 @@ import { AnnouncementBar } from '@/components/store/announcement-bar';
 import { Header } from '@/components/store/header';
 import { Footer } from '@/components/store/footer';
 import { CartDrawer } from '@/components/store/cart-drawer';
+import { ChatWidget } from '@/components/store/chat-widget';
 import { getHomeContentMap } from '@/lib/home-content/server';
 import { getHomeText } from '@/lib/home-content/defaults';
 
@@ -22,6 +23,8 @@ export default async function StoreLayout({
       <main className="min-h-screen">{children}</main>
       <Footer />
       <CartDrawer />
+      {/* AI Customer Support Chatbot — powered by LM Studio */}
+      <ChatWidget />
     </>
   );
 }

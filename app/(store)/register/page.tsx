@@ -39,27 +39,28 @@ export default function RegisterPage() {
 
     if (USE_SUPABASE) {
       try {
-        const supabase = createClient();
-        
-        // Use standard signup
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: name,
-              phone: phone,
-            }
-          }
+        const res = await fetch('/api/v1/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name, phone }),
         });
+        const result = await res.json();
 
-        if (signUpError) {
-          setError(signUpError.message);
+        if (!res.ok) {
+          setError(result.error ?? 'Đăng ký thất bại. Vui lòng thử lại.');
           setLoading(false);
           return;
         }
 
-        // Successfully signed up and session created
+        // Sign in immediately after register (server already confirmed email)
+        const supabase = createClient();
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) {
+          // Registration succeeded but auto-login failed — redirect to login
+          router.push('/login?registered=1');
+          return;
+        }
+
         router.push('/account');
         router.refresh();
         return;
@@ -75,6 +76,7 @@ export default function RegisterPage() {
       setSession(createDefaultUser(email, name, phone));
       router.push('/account');
     }, 800);
+
   };
 
   return (

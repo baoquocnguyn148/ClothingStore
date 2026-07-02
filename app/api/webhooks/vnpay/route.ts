@@ -10,7 +10,6 @@ export async function GET(request: Request) {
   }
 
   const success = params.vnp_ResponseCode === '00';
-  const orderId = params.vnp_TxnRef;
   const eventId = `vnpay-${params.vnp_TransactionNo ?? params.vnp_TxnRef}`;
 
   try {

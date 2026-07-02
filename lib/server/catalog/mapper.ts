@@ -3,17 +3,19 @@ import { resolveProductImages } from '@/lib/commerce/product-images';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapDbProduct(row: any): Product {
-  const variants = (row.product_variants ?? []).map((v: {
-    id: string; size: string; color_name: string; color_hex: string;
-    price: number; stock_qty: number; is_active: boolean;
-  }) => ({
-    id: v.id,
-    size: v.size,
-    color: v.color_name,
-    colorHex: v.color_hex,
-    price: v.price,
-    available: v.is_active && v.stock_qty > 0,
-  }));
+  const variants = (row.product_variants ?? [])
+    .filter((v: { size: string }) => !['Size 1', 'Size 2', 'Size 3', 'Size 4'].includes(v.size))
+    .map((v: {
+      id: string; size: string; color_name: string; color_hex: string;
+      price: number; stock_qty: number; is_active: boolean;
+    }) => ({
+      id: v.id,
+      size: v.size,
+      color: v.color_name,
+      colorHex: v.color_hex,
+      price: v.price,
+      available: v.is_active && v.stock_qty > 0,
+    }));
 
   const colorMap = new Map<string, string>();
   variants.forEach((v: { color: string; colorHex: string }) => {

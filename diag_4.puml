@@ -1,0 +1,77 @@
+@startuml ACT_Checkout
+skinparam activity {
+  BackgroundColor #EFF6FF
+  BorderColor #3B82F6
+}
+
+|Khách hàng|
+start
+:Duyệt sản phẩm (/collections, /products/[slug]);
+:Chọn biến thể (size + màu);
+
+if (Còn hàng? stock_qty > 0) then (Có)
+  :Thêm vào giỏ hàng;
+  note right: POST /api/v1/cart\n(upsert cart_items)
+else (Hết hàng)
+  :Hiển thị "Hết hàng"\nNút Add to Cart bị disable;
+  stop
+endif
+
+:Vào trang Checkout (/checkout);
+:Chọn/nhập địa chỉ giao hàng;
+note right: GET /api/v1/me/addresses
+
+:Hệ thống tính phí ship;
+note right: POST /api/v1/shipping/calculate\n(dựa trên shipping_zones)
+
+if (Nhập mã giảm giá?) then (Có)
+  |Hệ thống|
+  :Gọi apply_promotion() RPC\n(kiểm tra: hạn, lượt dùng,\nmin_order_value, min_qty);
+  if (Mã hợp lệ?) then (Hợp lệ)
+    :Áp dụng discount;
+  else (Không hợp lệ)
+    :Hiển thị lỗi;
+  endif
+endif
+
+|Khách hàng|
+:Chọn phương thức TT\n(VNPay / MoMo / ZaloPay / COD);
+:Xác nhận đặt hàng;
+
+|Hệ thống|
+:POST /api/v1/orders\nTạo order (status=pending_payment)\ngenerate_order_number() → BD260628xxxxx;
+:POST /api/v1/orders/[id]/pay\nPaymentService.createPayment()\nINSERT payments (status=pending);
+
+if (Phương thức COD?) then (Có)
+  :Trả về thành công trực tiếp\n(không redirect);
+  :UPDATE order status = 'confirmed';
+else (Không - Online)
+  |Khách hàng|
+  :Redirect sang trang thanh toán\n(VNPay / MoMo / ZaloPay);
+  :Hoàn tất thanh toán;
+  
+  |Cổng Thanh Toán|
+  :Gửi IPN Webhook về\n/api/webhooks/[provider];
+  
+  |Hệ thống|
+  :Kiểm tra idempotency\n(gateway_event_id UNIQUE);
+  if (Thanh toán thành công?) then (Thành công)
+    :UPDATE payments.status = 'completed';
+    :UPDATE orders.status = 'paid';
+    :reserve_order_stock() RPC\n(atomic: UPDATE WHERE stock_qty >= qty);
+    :INSERT inventory_movements\n(delta=-qty, reason='order', reference_order_id);
+    :Trigger trg_order_status_change\n→ update_membership_tier();
+    :logAdminAction('order.status_update');
+    :INSERT admin_notifications (nếu cần);
+  else (Thất bại)
+    :UPDATE payments.status = 'failed';
+    :UPDATE orders.status = 'cancelled';
+    note right: Stock KHÔNG bị trừ\n(reserve_order_stock() chưa chạy)
+  endif
+endif
+
+|Khách hàng|
+:Redirect về /checkout/success\n(hoặc /checkout/return);
+stop
+
+@enduml

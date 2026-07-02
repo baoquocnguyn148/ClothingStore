@@ -1,0 +1,43 @@
+@startuml STATE_Order
+skinparam state {
+  BackgroundColor #EFF6FF
+  BorderColor #2563EB
+}
+
+[*] --> draft : Khởi tạo đơn
+
+draft --> pending_payment : Chọn thanh toán online\n(POST /api/v1/orders/[id]/pay)
+draft --> confirmed : Chọn COD\n(không qua cổng TT)
+
+pending_payment --> paid : IPN Webhook = COMPLETED\n→ reserve_order_stock() RPC
+pending_payment --> cancelled : IPN Webhook = FAILED\nhoặc timeout
+
+paid --> confirmed : Admin xác nhận\n(PATCH /admin/orders/[id]/status)
+
+confirmed --> shipping : Admin cập nhật\n"đang giao hàng"
+shipping --> delivered : Admin xác nhận\n"đã giao thành công"
+delivered --> [*] : Trigger: update_membership_tier()
+
+paid --> cancelled : Admin hủy\n→ hoàn kho + audit log
+confirmed --> cancelled : Admin hủy\n→ hoàn kho + audit log
+
+cancelled --> refunded : Admin xử lý hoàn tiền
+refunded --> [*]
+
+note right of paid
+  ★ reserve_order_stock() RPC
+  UPDATE product_variants
+  SET stock_qty = stock_qty - qty
+  WHERE stock_qty >= qty AND is_active = true
+  (atomic, raises exception nếu hết hàng)
+end note
+
+note right of delivered
+  ★ Trigger: trg_order_status_change
+  → update_membership_tier()
+  Cập nhật: standard → silver
+  → gold → platinum → vip
+  Dựa trên membership_tier_config
+end note
+
+@enduml

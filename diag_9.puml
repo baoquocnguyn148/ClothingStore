@@ -1,0 +1,102 @@
+@startuml COMP_Architecture
+skinparam component {
+  BackgroundColor #EFF6FF
+  BorderColor #2563EB
+}
+skinparam database {
+  BackgroundColor #F0FDF4
+  BorderColor #16A34A
+}
+
+package "Client Layer" {
+  [Browser / Mobile Browser] as CLIENT
+}
+
+package "Next.js Application (App Router)" {
+  package "Store Routes — /app/(store)/" {
+    [Home Page] as HOME
+    [Collections + Search] as COLL
+    [Product Detail Page] as PDP
+    [Checkout Flow] as CHK
+    [Account Pages] as ACC
+    [Blog / CMS Pages] as BLOG
+  }
+  
+  package "Admin Routes — /app/admin/" {
+    [Dashboard (MIS)] as ADASH
+    [Orders Management] as AORD
+    [Inventory Management] as AINV
+    [CRM Module] as ACRM
+    [Products / Collections] as APROD
+    [Decision Support (DSS)] as DSS
+    [Executive View (ESS)] as ESS
+  }
+  
+  package "API Routes — /app/api/" {
+    [/api/v1/* (Public API)] as APIV1
+    [/api/admin/* (Protected)] as APIADM
+    [/api/webhooks/* (VNPay/MoMo/ZaloPay)] as WEBHOOK
+    [/api/auth/* (Supabase Auth)] as APAUTH
+  }
+  
+  package "Server Services — /lib/server/" {
+    [OrderService] as ORDSVC
+    [PaymentService] as PAYSVC
+    [DashboardService] as DASHSVC
+    [InventoryService] as INVSVC
+    [AuditService] as AUDSVC
+  }
+  
+  package "Middleware" {
+    [Auth Middleware\nupdateSession()] as MW
+  }
+}
+
+package "Supabase Cloud" {
+  database "PostgreSQL\n(OLTP Database)" as PG
+  [Supabase Auth\n(JWT sessions)" as SBAUTH
+  [Row Level Security\n(RLS Policies)] as RLS
+  [DB Functions & Triggers\n(reserve_order_stock\ncheck_low_stock\nupdate_membership_tier\napply_promotion)] as DBTRIG
+  [Storage\n(product-images bucket)] as STORAGE
+}
+
+package "External Services" {
+  [VNPay Gateway] as VNPAY
+  [MoMo Gateway] as MOMO
+  [ZaloPay Gateway] as ZALOPAY
+}
+
+CLIENT --> MW : HTTPS Request
+MW --> SBAUTH : Verify JWT session
+MW --> APIV1
+MW --> APIADM
+MW --> APAUTH
+
+APIV1 --> ORDSVC
+APIV1 --> PAYSVC
+APIV1 --> INVSVC
+
+APIADM --> DASHSVC
+APIADM --> ORDSVC
+APIADM --> INVSVC
+APIADM --> AUDSVC
+
+ORDSVC --> PG : CRUD orders
+PAYSVC --> VNPAY : Create payment URL
+PAYSVC --> MOMO : Create payment URL
+PAYSVC --> ZALOPAY : Create payment URL
+INVSVC --> PG : inventory_movements
+DASHSVC --> PG : mis_daily_sales_summary VIEW
+AUDSVC --> PG : admin_audit_logs
+
+WEBHOOK --> PAYSVC : IPN Verification
+PAYSVC --> PG : UPDATE payment_events\n(idempotency)
+PG --> DBTRIG : Triggers auto-fire
+DBTRIG --> PG : Update membership_tier\ncheck_low_stock\ngenerate_order_number
+
+APIADM --> STORAGE : Upload product images
+STORAGE --> APIV1 : Public image URLs
+
+PG --> RLS : Enforce access control
+
+@enduml

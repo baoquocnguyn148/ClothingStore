@@ -42,11 +42,24 @@ export function buildVNPayUrl(params: {
   if (!config) return null;
 
   const date = new Date();
-  const createDate = date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
-  const expireDate = new Date(date.getTime() + 15 * 60000)
-    .toISOString()
-    .replace(/[-:TZ.]/g, '')
-    .slice(0, 14);
+  // VNPay requires time in GMT+7 format: yyyyMMddHHmmss
+  const gmt7 = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  const createDate = 
+    `${gmt7.getUTCFullYear()}` +
+    `${String(gmt7.getUTCMonth() + 1).padStart(2, '0')}` +
+    `${String(gmt7.getUTCDate()).padStart(2, '0')}` +
+    `${String(gmt7.getUTCHours()).padStart(2, '0')}` +
+    `${String(gmt7.getUTCMinutes()).padStart(2, '0')}` +
+    `${String(gmt7.getUTCSeconds()).padStart(2, '0')}`;
+  
+  const expireGmt7 = new Date(gmt7.getTime() + 15 * 60000);
+  const expireDate = 
+    `${expireGmt7.getUTCFullYear()}` +
+    `${String(expireGmt7.getUTCMonth() + 1).padStart(2, '0')}` +
+    `${String(expireGmt7.getUTCDate()).padStart(2, '0')}` +
+    `${String(expireGmt7.getUTCHours()).padStart(2, '0')}` +
+    `${String(expireGmt7.getUTCMinutes()).padStart(2, '0')}` +
+    `${String(expireGmt7.getUTCSeconds()).padStart(2, '0')}`;
 
   let vnpParams: Record<string, string> = {
     vnp_Version: '2.1.0',
@@ -77,9 +90,12 @@ export function verifyVNPayIpn(query: Record<string, string>): boolean {
   if (!config) return false;
 
   const secureHash = query.vnp_SecureHash;
-  const params = { ...query };
-  delete params.vnp_SecureHash;
-  delete params.vnp_SecureHashType;
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (key.startsWith('vnp_') && key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType') {
+      params[key] = value;
+    }
+  }
 
   const sorted = sortObject(params);
   const signData = new URLSearchParams(sorted).toString();

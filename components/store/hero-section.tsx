@@ -23,7 +23,7 @@ export function HeroSection({ content }: HeroSectionProps) {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute bottom-8 left-8 md:bottom-16 md:left-16 text-white">
+        <div className="absolute bottom-8 left-8 md:bottom-16 md:left-16 text-white animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both delay-300">
           <p className="text-xs md:text-sm font-medium tracking-widest mb-2">
             {getHomeText(content, 'hero.eyebrow')}
           </p>

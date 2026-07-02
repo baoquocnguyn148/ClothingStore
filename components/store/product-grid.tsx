@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import type { Product, ProductFilters } from '@/lib/commerce/types';
 import { ProductCard } from './product-card';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProductGridProps {
@@ -29,6 +29,18 @@ export function ProductGrid({ products, showFilters = true }: ProductGridProps) 
   const [sizes, setSizes] = useState<string[]>([]);
   const [colors, setColors] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number | null>(null);
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const sizeOptions = useMemo(
     () => [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.size)))],
@@ -101,20 +113,40 @@ export function ProductGrid({ products, showFilters = true }: ProductGridProps) 
           )}
         </div>
 
-        <label className="flex items-center gap-3 text-sm">
-          Sắp xếp
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value as ProductFilters['sort'])}
-            className="rounded-sm border border-border bg-white px-3 py-2"
+        <div className="flex items-center gap-3 text-sm relative" ref={sortRef}>
+          <span className="text-gray-500">Sắp xếp:</span>
+          <button
+            type="button"
+            onClick={() => setIsSortOpen(!isSortOpen)}
+            className="flex items-center gap-2 rounded-md border border-border bg-white px-4 py-2 font-medium hover:border-black transition-colors"
           >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value ?? 'relevance'}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            {SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Liên quan'}
+            <ChevronDown size={14} className={cn("transition-transform", isSortOpen && "rotate-180")} />
+          </button>
+          
+          {isSortOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border bg-white p-1.5 shadow-lg z-20 animate-in fade-in slide-in-from-top-2">
+              {SORT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setSort(option.value as ProductFilters['sort']);
+                    setIsSortOpen(false);
+                  }}
+                  className={cn(
+                    "w-full text-left rounded-md px-3 py-2 text-sm transition-colors",
+                    sort === option.value 
+                      ? "bg-black text-white font-medium" 
+                      : "text-gray-600 hover:bg-gray-100"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {showFilters && (

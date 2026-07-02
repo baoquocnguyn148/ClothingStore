@@ -1,0 +1,33 @@
+@startuml SEQ_AdminOrder
+actor "Nhân viên Admin" as A
+participant "Admin Dashboard\n/admin/orders/[id]" as UI
+participant "PATCH /api/admin\n/orders/[id]/status" as API
+participant "OrderService" as OS
+participant "logAdminAction\naudit.service.ts" as AUD
+participant "Supabase DB" as DB
+
+A -> UI : Mở chi tiết đơn hàng
+UI -> DB : GET orders + order_items + order_status_logs
+DB -> UI : Order detail data
+UI -> A : Hiển thị đơn + lịch sử trạng thái
+
+A -> UI : Chọn trạng thái mới\n(confirmed / shipping / delivered / cancelled)
+UI -> API : PATCH { status: "confirmed", note: "..." }
+
+API -> API : requireAdmin()\n(kiểm tra role='admin' trong profiles)
+API -> OS : updateOrderStatus(id, status, note)
+OS -> DB : UPDATE orders SET status='confirmed'
+OS -> DB : INSERT order_status_logs\n(from_status='paid', to_status='confirmed')
+
+alt Status = 'cancelled' (hoàn kho)
+  OS -> DB : Cộng lại stock_qty\n(restore stock từ order_items)
+  OS -> DB : INSERT inventory_movements\n(delta=+qty, reason='cancellation')
+end
+
+OS -> API : OK
+API -> AUD : logAdminAction({ actorId, action:'order.status_update', entity:'orders', metadata })
+AUD -> DB : INSERT admin_audit_logs
+API -> UI : { ok: true }
+UI -> A : Hiển thị trạng thái mới\nvà flash notification
+
+@enduml

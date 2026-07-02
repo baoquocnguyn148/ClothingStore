@@ -31,20 +31,21 @@ export function StylingSection({ posts, content }: StylingSectionProps) {
               href={`/blog/post/${post.slug}`}
               className="group"
             >
-              <div className="relative aspect-square overflow-hidden mb-3">
+              <div className="relative aspect-[4/5] overflow-hidden mb-3 rounded-xl shadow-sm border border-black/5 group-hover:shadow-md transition-all duration-300">
                 <Image
                   src={post.image}
                   alt={post.title}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
                   sizes="(max-width: 768px) 50vw, 25vw"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-3">
-                  <p className="text-xs uppercase">{getHomeText(content, 'styling.card_label')}</p>
-                  <p className="text-xs opacity-80">{post.date}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1">{getHomeText(content, 'styling.card_label')}</p>
+                  <p className="text-[11px] text-gray-300 font-medium">{post.date}</p>
                 </div>
               </div>
-              <h3 className="text-xs md:text-sm font-bold uppercase line-clamp-2">
+              <h3 className="text-sm md:text-base font-bold line-clamp-2 mt-2 group-hover:text-gray-600 transition-colors">
                 {post.title}
               </h3>
             </Link>

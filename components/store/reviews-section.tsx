@@ -51,19 +51,27 @@ export function ReviewsSection({ content }: ReviewsSectionProps) {
             {mockReviews.map((review) => (
               <div 
                 key={review.id} 
-                className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
+                className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all duration-500 hover:-translate-y-2 hover:shadow-xl hover:border-gray-200 flex flex-col h-full"
               >
-                <div className="flex gap-1 mb-4">
+                <div className="flex gap-1 mb-5">
                   {[...Array(review.rating)].map((_, i) => (
                     <Star key={i} size={16} className="fill-[#FFB800] text-[#FFB800]" />
                   ))}
                 </div>
-                <p className="text-gray-700 leading-relaxed mb-6 line-clamp-4">
+                <p className="text-gray-700 leading-relaxed mb-8 flex-1 italic">
                   "{review.text}"
                 </p>
-                <p className="font-bold text-sm uppercase tracking-wide text-black">
-                  {review.author}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    {review.author.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-black">
+                      {review.author}
+                    </p>
+                    <p className="text-xs text-gray-500">Khách hàng xác thực</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

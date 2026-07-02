@@ -1,0 +1,87 @@
+@startuml UC_BnD_MIS
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EFF6FF
+  BorderColor #3B82F6
+  FontSize 11
+}
+skinparam actor {
+  FontSize 12
+  FontStyle bold
+}
+skinparam ArrowColor #475569
+skinparam Padding 4
+skinparam Nodesep 40
+skinparam Ranksep 60
+
+left to right direction
+
+actor "Khách hàng\n(Customer)" as C #1E3A5F
+actor "Nhân viên Admin\n(Staff)" as A #1D4ED8
+actor "Ban Giám đốc\n(Executive)" as E #7C3AED
+
+rectangle "B&D Fashion MIS — Next.js / Supabase" {
+  
+  ' --- Storefront ---
+  usecase "Đăng ký / Đăng nhập" as UC1
+  usecase "Duyệt & Tìm kiếm SP" as UC2
+  usecase "Xem chi tiết SP\n& chọn biến thể" as UC3
+  usecase "Quản lý giỏ hàng" as UC4
+  usecase "Đặt hàng & Thanh toán\n(VNPay / MoMo / ZaloPay / COD)" as UC5
+  usecase "Theo dõi đơn hàng" as UC6
+  usecase "Wishlist sản phẩm" as UC7
+  usecase "Viết đánh giá SP" as UC8
+  usecase "Nhập mã khuyến mãi" as UC9
+
+  ' --- Admin ---
+  usecase "Quản lý SP & SKU" as UA1
+  usecase "Quản lý tồn kho" as UA2
+  usecase "Xử lý đơn hàng" as UA3
+  usecase "Quản lý khuyến mãi" as UA4
+  usecase "Quản lý nội dung (CMS)" as UA5
+  usecase "Xem thông báo" as UA6
+  usecase "CRM: Notes / Tasks /\nTickets hỗ trợ KH" as UA7
+  usecase "Quản lý Collections & Tags" as UA8
+
+  ' --- MIS / DSS / ESS ---
+  usecase "Dashboard KPI\n(doanh thu, đơn hàng...)" as UE1
+  usecase "Phân tích doanh thu" as UE2
+  usecase "RFM Segmentation" as UE3
+  usecase "Quản lý chiến dịch CRM" as UE4
+  usecase "Decision Support" as UE5
+  usecase "Executive View" as UE6
+}
+
+' --- Kết nối ---
+C --> UC1
+C --> UC2
+C --> UC3
+C --> UC4
+C --> UC5
+C --> UC6
+C --> UC7
+C --> UC8
+C --> UC9
+
+' Cùng chỉ vào UC1 để gom node
+UC1 <-- A
+UA1 <-- A
+UA2 <-- A
+UA3 <-- A
+UA4 <-- A
+UA5 <-- A
+UA6 <-- A
+UA7 <-- A
+UA8 <-- A
+UE1 <-- A
+UE2 <-- A
+
+UE1 <-- E
+UE2 <-- E
+UE3 <-- E
+UE4 <-- E
+UE5 <-- E
+UE6 <-- E
+
+@enduml

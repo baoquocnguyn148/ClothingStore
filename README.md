@@ -29,9 +29,7 @@ Hệ thống được phát triển dựa trên các công nghệ web hiện đ�
 - **ORM / Query Builder:** Supabase JavaScript Client (`@supabase/supabase-js`).
 - **Thiết kế CSDL:** Hệ cơ sở dữ liệu quan hệ hoàn chỉnh với các bảng: `users`, `products`, `product_variants`, `orders`, `order_items`, `inventory_movements`, `wishlists`, v.v.
 
-### Khác
-- **State Management:** React Context API (`CartProvider`, `WishlistProvider`).
-- **Deployment:** Vercel (Tối ưu riêng cho Next.js).
+
 
 ---
 

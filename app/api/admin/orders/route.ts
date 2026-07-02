@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/api/admin-helper';
 import { validateBody, validateQuery } from '@/lib/api/validate';
 import { OrderService } from '@/lib/server/order/order.service';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logAdminAction } from '@/lib/server/admin/audit.service';
 
 const QuerySchema = z.object({
   status: z.string().optional(),
@@ -74,7 +75,7 @@ const CreateOrderSchema = z.object({
 export async function POST(request: NextRequest) {
   if (!isSupabaseMode()) return jsonError('Supabase not configured', 503);
 
-  const { errorResponse } = await requireAdmin();
+  const { user, errorResponse } = await requireAdmin();
   if (errorResponse) return errorResponse;
 
   const { data, errorResponse: validErr } = await validateBody(request, CreateOrderSchema);
@@ -82,6 +83,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const order = await new OrderService().createFromCart(data);
+    
+    await logAdminAction({
+      actorId: user.id,
+      action: 'create',
+      entity: 'order',
+      entityId: order.id,
+      metadata: { source: 'admin_manual_create' },
+    });
+
     return jsonOk({ order }, 201);
   } catch (e) {
     return jsonError(e instanceof Error ? e.message : 'Failed', 500);

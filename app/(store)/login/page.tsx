@@ -2,20 +2,24 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BRAND } from '@/lib/brand';
 import { USE_SUPABASE } from '@/lib/config';
 import { createClient } from '@/lib/supabase/client';
 import { setSession, createDefaultUser } from '@/lib/auth/session';
 import { useCart } from '@/lib/cart/cart-context';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { refreshCart } = useCart();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const justRegistered = searchParams.get('registered') === '1';
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,7 +42,17 @@ export default function LoginPage() {
         password,
       });
       if (authError) {
-        setError(authError.message);
+        // Translate common Supabase auth errors to Vietnamese
+        const msg = authError.message;
+        if (msg === 'Email not confirmed') {
+          setError('Email chưa được xác nhận. Vui lòng kiểm tra hộp thư hoặc liên hệ admin.');
+        } else if (msg === 'Invalid login credentials') {
+          setError('Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.');
+        } else if (msg.includes('Too many requests')) {
+          setError('Quá nhiều lần thử. Vui lòng đợi vài phút rồi thử lại.');
+        } else {
+          setError(msg);
+        }
         setLoading(false);
         return;
       }
@@ -63,21 +77,29 @@ export default function LoginPage() {
   return (
     <div className="min-h-[calc(100vh-200px)] flex animate-page-fade-in">
       {/* Visual side - hidden on mobile */}
-      <div className="hidden lg:flex w-1/2 bg-neutral-900 text-white flex-col justify-between p-16">
-        <div>
+      <div className="hidden lg:flex w-1/2 relative bg-neutral-900 text-white flex-col justify-between p-16 overflow-hidden">
+        <Image
+          src="/images/banners/banner1.png"
+          alt="Login banner"
+          fill
+          className="object-cover opacity-40 mix-blend-overlay"
+          sizes="50vw"
+          priority
+        />
+        <div className="relative z-10">
           <Link href="/" className="text-2xl font-black tracking-tighter uppercase">{BRAND.name}</Link>
         </div>
-        <div>
-          <h2 className="text-4xl font-black uppercase leading-tight mb-6">
+        <div className="relative z-10">
+          <h2 className="text-4xl lg:text-5xl font-black uppercase leading-tight mb-6">
             Đăng nhập để nhận<br />ưu đãi độc quyền.
           </h2>
-          <p className="text-gray-400 max-w-md leading-relaxed text-lg mb-8">
+          <p className="text-gray-200 max-w-md leading-relaxed text-lg mb-8">
             Quản lý đơn hàng, lưu danh sách yêu thích và trải nghiệm mua sắm mượt mà hơn cùng {BRAND.fullName}.
           </p>
           <div className="flex gap-2">
-            <span className="w-2 h-2 rounded-full bg-white" />
-            <span className="w-2 h-2 rounded-full bg-white/30" />
-            <span className="w-2 h-2 rounded-full bg-white/30" />
+            <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+            <span className="w-2 h-2 rounded-full bg-white/40" />
+            <span className="w-2 h-2 rounded-full bg-white/40" />
           </div>
         </div>
       </div>
@@ -91,6 +113,12 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {justRegistered && (
+              <div className="p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium flex items-center gap-2">
+                <CheckCircle size={16} className="shrink-0" />
+                Đăng ký thành công! Vui lòng đăng nhập bằng tài khoản vừa tạo.
+              </div>
+            )}
             {error && (
               <div className="p-4 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm font-medium">
                 {error}
