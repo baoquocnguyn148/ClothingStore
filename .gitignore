@@ -19,3 +19,14 @@ tsconfig.tsbuildinfo
 
 # Temporary uploads
 .uploads/
+
+# Python cache (from doc-editing scripts — not part of web app)
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Microsoft Word temp/lock files
+~$*
+
+# Report screenshots (for academic report only — not part of web app)
+scripts/report_screenshots/
