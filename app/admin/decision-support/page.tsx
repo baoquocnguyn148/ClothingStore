@@ -166,22 +166,22 @@ function CustomerSegment({
     <section className="admin-card">
       <h2 className="admin-card-title">{title}</h2>
       {rows.length === 0 ? (
-        <div className="admin-empty">No customers.</div>
+        <div className="admin-empty">Chưa có khách hàng.</div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {rows.map((row) => (
-            <div key={row.userId} className="rounded-xl border border-border p-3 text-sm">
-              <Link href={`/admin/customers/${row.userId}`} className="font-medium hover:underline">
+            <div key={row.userId} style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: '12px 14px' }}>
+              <Link href={`/admin/customers/${row.userId}`} style={{ fontWeight: 600, color: 'var(--admin-blue)', fontSize: 14, textDecoration: 'none' }}>
                 {row.name}
               </Link>
-              <p className="text-xs text-slate-400">
-                {row.phone || 'No phone'} · {row.orderCount} orders · {formatVND(row.totalSpent)}
+              <p style={{ fontSize: 12, color: 'var(--admin-text-muted)', margin: '4px 0 0' }}>
+                {row.phone || 'Chưa có SĐT'} · {row.orderCount} đơn · {formatVND(row.totalSpent)}
               </p>
-              <p className="mt-2 text-xs text-slate-300">
-                Last order: {formatDate(row.lastOrderAt)} · {row.recommendation}
+              <p style={{ fontSize: 12, color: 'var(--admin-text)', margin: '4px 0 0' }}>
+                Đơn cuối: {formatDate(row.lastOrderAt)} · {row.recommendation}
               </p>
               {row.rfmScore !== undefined && (
-                <p className="mt-1 text-xs text-slate-500">
+                <p style={{ fontSize: 11, color: 'var(--admin-text-muted)', margin: '4px 0 0' }}>
                   RFM {row.rfmScore} · {row.rfmSegment} · recency {row.recencyDays ?? '-'}d
                 </p>
               )}
@@ -193,22 +193,24 @@ function CustomerSegment({
   );
 }
 
+const PRIORITY_COLOR: Record<string, string> = { urgent: '#f04c4c', high: '#f5a623', normal: '#4f8ef7', low: '#34c97b' };
+
 function PriorityList({ title, rows, type }: { title: string; rows: any[]; type: 'task' | 'ticket' }) {
   return (
-    <div className="rounded-xl border border-border p-4">
-      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
+    <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 16 }}>
+      <h3 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: 'var(--admin-text)' }}>{title}</h3>
       {rows.length === 0 ? (
-        <p className="text-sm text-slate-400">No items.</p>
+        <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>Không có mục nào.</p>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {rows.slice(0, 8).map((row) => (
             <Link
               key={row.id}
               href={`/admin/customers/${row.customer_user_id}`}
-              className="block rounded-lg bg-slate-950 p-3 text-sm hover:bg-slate-900"
+              style={{ display: 'block', background: 'var(--admin-bg)', borderRadius: 8, padding: '10px 12px', textDecoration: 'none', borderLeft: `3px solid ${PRIORITY_COLOR[row.priority] ?? 'var(--admin-border)'}` }}
             >
-              <p className="font-medium">{type === 'task' ? row.title : row.subject}</p>
-              <p className="text-xs text-slate-400">{row.priority} · {type === 'task' ? formatDate(row.due_at) : row.status}</p>
+              <p style={{ fontWeight: 500, fontSize: 13, color: 'var(--admin-text)', margin: 0 }}>{type === 'task' ? row.title : row.subject}</p>
+              <p style={{ fontSize: 11, color: 'var(--admin-text-muted)', margin: '3px 0 0' }}>{row.priority} · {type === 'task' ? formatDate(row.due_at) : row.status}</p>
             </Link>
           ))}
         </div>

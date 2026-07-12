@@ -96,16 +96,41 @@ export default async function AdminReportsPage({
 
           <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
             <section className="admin-card">
-              <h2 className="admin-card-title">Order status</h2>
+              <h2 className="admin-card-title">Trạng thái đơn hàng</h2>
               <div className="admin-status-list">
-                {report.orderStatus.map((row) => (
-                  <div key={row.status} className="admin-status-row">
-                    <span className="admin-status-label">{row.status}</span>
-                    <span className="admin-status-count">{row.count}</span>
-                  </div>
-                ))}
+                {report.orderStatus
+                  .sort((a, b) => b.count - a.count)
+                  .map((row) => {
+                    const STATUS_COLOR: Record<string, string> = {
+                      delivered: 'var(--admin-green)',
+                      paid: 'var(--admin-blue)',
+                      confirmed: 'var(--admin-blue)',
+                      shipping: 'var(--admin-purple)',
+                      cancelled: 'var(--admin-red)',
+                      refunded: 'var(--admin-red)',
+                      pending_payment: 'var(--admin-orange)',
+                    };
+                    const STATUS_LABEL: Record<string, string> = {
+                      delivered: 'Đã giao', paid: 'Đã thanh toán', confirmed: 'Đã xác nhận',
+                      shipping: 'Đang giao', cancelled: 'Đã hủy', refunded: 'Đã hoàn tiền',
+                      pending_payment: 'Chờ thanh toán',
+                    };
+                    const color = STATUS_COLOR[row.status] ?? 'var(--admin-text-muted)';
+                    const max = Math.max(...report.orderStatus.map(r => r.count), 1);
+                    return (
+                      <div key={row.status} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: 14, color: 'var(--admin-text)' }}>{STATUS_LABEL[row.status] ?? row.status}</span>
+                        <div style={{ flex: 2, background: 'var(--admin-surface-2)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.round((row.count / max) * 100)}%`, height: '100%', background: color, borderRadius: 4 }} />
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--admin-text)', width: 28, textAlign: 'right' }}>{row.count}</span>
+                      </div>
+                    );
+                  })}
               </div>
             </section>
+
 
             <section className="admin-card">
               <h2 className="admin-card-title">CRM workload</h2>
@@ -113,14 +138,14 @@ export default async function AdminReportsPage({
                 <MiniBreakdown title="Tasks" rows={report.crm.tasksByStatus} />
                 <MiniBreakdown title="Tickets" rows={report.crm.ticketsByStatus} />
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border p-4">
-                  <p className="text-sm text-slate-400">Overdue tasks</p>
-                  <p className="text-2xl font-semibold">{report.crm.overdueTasks}</p>
+              <div style={{ marginTop: 16, display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 16 }}>
+                  <p style={{ fontSize: 13, color: 'var(--admin-text-muted)', margin: '0 0 6px' }}>Task quá hạn</p>
+                  <p style={{ fontSize: 26, fontWeight: 700, color: report.crm.overdueTasks > 0 ? 'var(--admin-orange)' : 'var(--admin-text)', margin: 0 }}>{report.crm.overdueTasks}</p>
                 </div>
-                <div className="rounded-xl border border-border p-4">
-                  <p className="text-sm text-slate-400">High priority tickets</p>
-                  <p className="text-2xl font-semibold">{report.crm.highPriorityTickets}</p>
+                <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 16 }}>
+                  <p style={{ fontSize: 13, color: 'var(--admin-text-muted)', margin: '0 0 6px' }}>Ticket ưu tiên cao</p>
+                  <p style={{ fontSize: 26, fontWeight: 700, color: report.crm.highPriorityTickets > 0 ? 'var(--admin-red)' : 'var(--admin-text)', margin: 0 }}>{report.crm.highPriorityTickets}</p>
                 </div>
               </div>
             </section>
@@ -156,13 +181,13 @@ export default async function AdminReportsPage({
                 <Package size={18} /> Low stock
               </h2>
               {report.lowStock.length === 0 ? (
-                <div className="admin-empty">Khong co canh bao ton kho.</div>
+                <div className="admin-empty">Không có cảnh báo tồn kho.</div>
               ) : (
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {report.lowStock.map((item) => (
-                    <div key={item.sku} className="rounded-xl border border-border p-3 text-sm">
-                      <p className="font-medium">{item.productTitle}</p>
-                      <p className="text-xs text-slate-400">SKU {item.sku} · Stock {item.stockQty}</p>
+                    <div key={item.sku} style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderLeft: '3px solid var(--admin-orange)', borderRadius: 10, padding: '10px 14px' }}>
+                      <p style={{ fontWeight: 500, fontSize: 13, margin: 0, color: 'var(--admin-text)' }}>{item.productTitle}</p>
+                      <p style={{ fontSize: 11, color: 'var(--admin-text-muted)', margin: '3px 0 0' }}>SKU {item.sku} · Tồn: <span style={{ color: item.stockQty === 0 ? 'var(--admin-red)' : 'var(--admin-orange)', fontWeight: 600 }}>{item.stockQty}</span></p>
                     </div>
                   ))}
                 </div>
@@ -199,16 +224,16 @@ function StatCard({
 
 function MiniBreakdown({ title, rows }: { title: string; rows: Array<{ label: string; count: number }> }) {
   return (
-    <div className="rounded-xl border border-border p-4">
-      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
-      <div className="space-y-2 text-sm">
+    <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 16 }}>
+      <h3 style={{ marginBottom: 12, fontSize: 13, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 12px' }}>{title}</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.length === 0 ? (
-          <p className="text-slate-400">No data</p>
+          <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>Không có dữ liệu</p>
         ) : (
           rows.map((row) => (
-            <div key={row.label} className="flex justify-between gap-3">
-              <span className="text-slate-400">{row.label}</span>
-              <span className="font-semibold">{row.count}</span>
+            <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
+              <span style={{ color: 'var(--admin-text-muted)' }}>{row.label}</span>
+              <span style={{ fontWeight: 600, color: 'var(--admin-text)' }}>{row.count}</span>
             </div>
           ))
         )}
