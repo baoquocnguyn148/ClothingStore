@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import AdminSidebar from '@/components/admin/sidebar';
 import AdminTopBar from '@/components/admin/topbar';
+import { isSupabaseMode } from '@/lib/api/response';
 
 export const metadata: Metadata = {
   title: 'Admin Panel — B&D',
@@ -15,31 +16,38 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Auth guard: must be logged in + admin role
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let adminName = 'Mock Admin';
+  const isSupa = isSupabaseMode();
 
-  if (!user) {
-    redirect('/login?redirect=/admin');
-  }
+  if (isSupa) {
+    // Auth guard: must be logged in + admin role
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  // Check admin role
-  const db = createAdminClient();
-  const { data: profile } = await db
-    .from('profiles')
-    .select('role, full_name')
-    .eq('user_id', user.id)
-    .single();
+    if (!user) {
+      redirect('/login?redirect=/admin');
+    }
 
-  if (!profile || profile.role !== 'admin') {
-    redirect('/');
+    // Check admin role
+    const db = createAdminClient();
+    const { data: profile } = await db
+      .from('profiles')
+      .select('role, full_name')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile || profile.role !== 'admin') {
+      redirect('/');
+    }
+    
+    adminName = profile.full_name || user.email || 'Admin';
   }
 
   return (
     <div className="admin-layout">
       <AdminSidebar />
       <div className="admin-main">
-        <AdminTopBar adminName={profile.full_name || user.email || 'Admin'} />
+        <AdminTopBar adminName={adminName} />
         <main className="admin-content">
           {children}
         </main>
