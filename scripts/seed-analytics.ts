@@ -6,256 +6,168 @@ import crypto from 'crypto';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-if (!url || !key) {
-  console.error('Missing SUPABASE env vars');
-  process.exit(1);
-}
+const VND = (n: number) => n.toLocaleString('vi-VN') + '₫';
 
-const supabase = createClient(url, key, {
-  auth: { persistSession: false, autoRefreshToken: false }
-});
+async function cleanAndSeed() {
+  console.log('🧹 Step 1: Clean up MOCK orders...');
+  const { error: delErr } = await supabase
+    .from('orders')
+    .delete()
+    .like('order_number', 'MOCK-%');
+  if (delErr) console.error('  ❌ Delete error:', delErr.message);
+  else console.log('  ✅ Removed old MOCK- orders');
 
-// 5 customers with distinct RFM profiles:
-// vip1, vip2 → VIP (high spend, frequent, recent)
-// loyal1 → Loyal (moderate spend, regular)
-// atrisk1 → At Risk (last order 90+ days ago)
-// new1 → New, no orders
-const MOCK_CUSTOMERS = [
-  { email: 'vip1@example.com',    name: 'Nguyễn Văn VIP',   phone: '0901111111', tier: 'vip' },
-  { email: 'vip2@example.com',    name: 'Trần Thị Giàu',    phone: '0902222222', tier: 'vip' },
-  { email: 'loyal1@example.com',  name: 'Lê Văn Quen',      phone: '0903333333', tier: 'member' },
-  { email: 'atrisk1@example.com', name: 'Phạm Thị Xa',      phone: '0904444444', tier: 'member' },
-  { email: 'new1@example.com',    name: 'Hoàng Văn Mới',    phone: '0905555555', tier: 'standard' },
-];
+  // ---- Step 2: Find our seeded users by email ----
+  console.log('\n👥 Step 2: Find seeded users...');
+  const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+  if (listErr) { console.error('List users error:', listErr.message); return; }
 
-async function getOrCreateUser(customer: typeof MOCK_CUSTOMERS[0]) {
-  const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  let user = users.find(u => u.email === customer.email);
-  if (!user) {
-    const { data: { user: newUser }, error } = await supabase.auth.admin.createUser({
-      email: customer.email,
-      password: 'Password123!',
-      email_confirm: true,
-      user_metadata: { full_name: customer.name, phone: customer.phone }
-    });
-    if (error || !newUser) { console.error(`❌ Cannot create ${customer.email}`, error); return null; }
-    user = newUser;
-  }
+  const EMAIL_MAP = {
+    'vip1@example.com':    { name: 'Nguyễn Văn VIP',   tier: 'vip',      targetSpend: 18000000, orderCount: 12 },
+    'vip2@example.com':    { name: 'Trần Thị Giàu',    tier: 'vip',      targetSpend: 13500000, orderCount: 9 },
+    'loyal1@example.com':  { name: 'Lê Văn Quen',      tier: 'member',   targetSpend: 4500000,  orderCount: 5 },
+    'atrisk1@example.com': { name: 'Phạm Thị Xa',      tier: 'member',   targetSpend: 1800000,  orderCount: 3 },
+  };
 
-  // Ensure profile is up-to-date
-  await supabase.from('profiles').upsert({
-    user_id: user.id,
-    full_name: customer.name,
-    phone: customer.phone,
-    role: 'customer',
-    membership_tier: customer.tier,
-  }, { onConflict: 'user_id' });
-
-  return user.id;
-}
-
-async function createOrder(
-  userId: string,
-  variants: Array<{ id: string; price: number }>,
-  daysAgo: number,
-  status: string,
-  forceTotal?: number
-) {
-  const v1 = variants[Math.floor(Math.random() * variants.length)];
-  const v2 = variants[Math.floor(Math.random() * variants.length)];
-  const useTwo = Math.random() > 0.4;
-  const subtotal = forceTotal ?? (v1.price + (useTwo ? v2.price : 0));
-  const shipping = 30000;
-  const total = subtotal + shipping;
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-
-  const { data: order } = await supabase.from('orders').insert({
-    order_number: `MOCK-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
-    user_id: userId,
-    status,
-    subtotal,
-    shipping_fee: shipping,
-    total,
-    payment_method: Math.random() > 0.5 ? 'cod' : 'vnpay',
-    shipping_address: { name: 'Test', phone: '0123', address_line: '123 Lê Văn Việt', city: 'TP.HCM' },
-    created_at: date.toISOString(),
-    updated_at: date.toISOString(),
-  }).select('id').single();
-
-  if (order) {
-    const items: any[] = [{ order_id: order.id, variant_id: v1.id, quantity: 1, unit_price: v1.price, total_price: v1.price }];
-    if (useTwo && !forceTotal) items.push({ order_id: order.id, variant_id: v2.id, quantity: 1, unit_price: v2.price, total_price: v2.price });
-    await supabase.from('order_items').insert(items);
-  }
-}
-
-async function seedAnalytics() {
-  console.log('🚀 Starting Analytics & CRM seed (v2)...\n');
-
-  // -- STEP 1: Get / create users --
   const userMap: Record<string, string> = {};
-  for (const c of MOCK_CUSTOMERS) {
-    const id = await getOrCreateUser(c);
-    if (id) { userMap[c.email] = id; console.log(`  ✅ ${c.name} (${c.email})`); }
+  for (const [email, cfg] of Object.entries(EMAIL_MAP)) {
+    const user = users.find(u => u.email === email);
+    if (!user) { console.log(`  ❌ Not found: ${email}`); continue; }
+    userMap[email] = user.id;
+
+    // Fix profile
+    await supabase.from('profiles').upsert({
+      user_id: user.id,
+      full_name: cfg.name,
+      role: 'customer',
+      membership_tier: cfg.tier,
+    }, { onConflict: 'user_id' });
+    console.log(`  ✅ ${cfg.name} → ${user.id.slice(0,8)}...`);
   }
-  const [vip1, vip2, loyal, atrisk] = [
-    userMap['vip1@example.com'],
-    userMap['vip2@example.com'],
-    userMap['loyal1@example.com'],
-    userMap['atrisk1@example.com'],
-  ];
-  const allUsers = Object.values(userMap).filter(Boolean);
-  console.log('');
 
-  // -- STEP 2: Get product variants --
-  const { data: variants } = await supabase.from('product_variants').select('id, price').limit(20);
-  if (!variants || variants.length === 0) {
-    console.error('❌ No product variants. Run npm run db:seed first.'); return;
+  // ---- Step 3: Get product variants ----
+  const { data: variants } = await supabase
+    .from('product_variants')
+    .select('id, price, sku, size, color_name, products(title)')
+    .limit(20);
+  if (!variants?.length) { console.error('\n❌ No variants - run npm run db:seed first'); return; }
+  console.log(`\n📦 Found ${variants.length} product variants`);
+
+  // ---- Step 4: Create orders per user profile ----
+  console.log('\n💳 Step 3: Creating orders...');
+
+  async function makeOrder(userId: string, daysAgo: number, status: string, forceTotal: number) {
+    const v = variants![Math.floor(Math.random() * variants!.length)] as any;
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    const { data: order, error } = await supabase.from('orders').insert({
+      order_number: `MOCK-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+      user_id: userId,
+      status,
+      subtotal: forceTotal,
+      shipping_fee: 30000,
+      total: forceTotal + 30000,
+      shipping_address: { name: 'Test', phone: '0909', address_line: '123 Lê Văn Việt', city: 'TP.HCM' },
+      created_at: date.toISOString(),
+      updated_at: date.toISOString(),
+    }).select('id').single();
+    if (error) console.error('Order insert error:', error.message);
+    if (order) {
+      const product = Array.isArray(v.products) ? v.products[0] : v.products;
+      await supabase.from('order_items').insert({
+        order_id: order.id,
+        variant_id: v.id,
+        product_title: product?.title ?? 'B&D Product',
+        variant_size: v.size ?? 'M',
+        variant_color: v.color_name ?? 'Black',
+        quantity: 1,
+        unit_price: forceTotal,
+      });
+    }
+    return order?.id;
   }
-  console.log(`  Found ${variants.length} product variants\n`);
 
-  // -- STEP 3: Create rich, realistic orders --
-  console.log('📦 Creating orders...');
-
-  // VIP 1: 12 orders spread over 30 days, each 900k-2.5M → total ~15M
+  // VIP1: 12 orders, 1.5M each, recent (last 30 days), delivered
+  const vip1 = userMap['vip1@example.com'];
   if (vip1) {
-    const vipPrices = [900000, 1200000, 1500000, 1800000, 2000000, 2500000];
+    const prices = [900000,1200000,1500000,1800000,2000000,2500000,1100000,1400000,1700000,1600000,1300000,2200000];
     for (let i = 0; i < 12; i++) {
-      await createOrder(vip1, variants, Math.floor(Math.random() * 28) + 1, 'delivered', vipPrices[i % vipPrices.length]);
+      await makeOrder(vip1, Math.floor(Math.random() * 25) + 1, 'delivered', prices[i]);
     }
-    console.log('  ✅ VIP1: 12 orders (avg 1.5M each)');
+    const total = prices.reduce((a,b)=>a+b,0);
+    console.log(`  ✅ VIP1 (Nguyễn Văn VIP): 12 orders, tổng ${VND(total)}`);
   }
 
-  // VIP 2: 9 orders, last order 5 days ago → total ~12M
+  // VIP2: 9 orders, last order 3 days ago
+  const vip2 = userMap['vip2@example.com'];
   if (vip2) {
-    const vipPrices2 = [1100000, 1400000, 1700000, 2200000, 1000000, 1600000, 1300000, 1900000, 2100000];
+    const prices = [1100000,1400000,1700000,2200000,1000000,1600000,1300000,1900000,2100000];
     for (let i = 0; i < 9; i++) {
-      await createOrder(vip2, variants, i < 2 ? Math.floor(Math.random() * 5) + 1 : Math.floor(Math.random() * 25) + 5, 'delivered', vipPrices2[i]);
+      await makeOrder(vip2, i < 2 ? i + 1 : Math.floor(Math.random() * 25) + 3, 'delivered', prices[i]);
     }
-    console.log('  ✅ VIP2: 9 orders (avg 1.5M each)');
+    const total = prices.reduce((a,b)=>a+b,0);
+    console.log(`  ✅ VIP2 (Trần Thị Giàu): 9 orders, tổng ${VND(total)}`);
   }
 
-  // Loyal: 5 orders, last 15 days ago → total ~4M
+  // Loyal: 5 orders, last 15 days ago
+  const loyal = userMap['loyal1@example.com'];
   if (loyal) {
-    const loyalPrices = [700000, 850000, 900000, 750000, 950000];
+    const prices = [700000,850000,900000,750000,950000];
     for (let i = 0; i < 5; i++) {
-      await createOrder(loyal, variants, i < 1 ? 15 : Math.floor(Math.random() * 25) + 10, 'delivered', loyalPrices[i]);
+      await makeOrder(loyal, i === 0 ? 15 : 20 + i * 2, 'delivered', prices[i]);
     }
-    console.log('  ✅ Loyal: 5 orders (avg 830K each)');
+    console.log(`  ✅ Loyal (Lê Văn Quen): 5 orders`);
   }
 
-  // At Risk: 3 orders but VERY old (90-150 days ago)
+  // At-risk: 3 orders, 90-150 days ago
+  const atrisk = userMap['atrisk1@example.com'];
   if (atrisk) {
     for (let i = 0; i < 3; i++) {
-      await createOrder(atrisk, variants, 90 + Math.floor(Math.random() * 60), 'delivered', 600000 + Math.floor(Math.random() * 400000));
+      await makeOrder(atrisk, 90 + i * 20, 'delivered', 500000 + i * 200000);
     }
-    console.log('  ✅ AtRisk: 3 old orders (90-150 days ago)');
+    console.log(`  ✅ At-risk (Phạm Thị Xa): 3 orders (90-150 ngày trước)`);
   }
 
-  // Extra random orders from all users to make MIS charts richer
-  const orderStatuses = ['delivered', 'delivered', 'delivered', 'shipping', 'paid', 'confirmed', 'cancelled'];
-  for (let i = 0; i < 40; i++) {
-    const uid = allUsers[Math.floor(Math.random() * allUsers.length)];
-    if (uid) await createOrder(uid, variants, Math.floor(Math.random() * 30), orderStatuses[Math.floor(Math.random() * orderStatuses.length)]);
+  // Extra 30 random orders — ONLY for vip1/vip2 to enrich chart data
+  // Do NOT assign to loyal/atrisk users so their RFM profile stays accurate
+  const chartUsers = [vip1, vip2].filter(Boolean) as string[];
+  const statuses = ['delivered','delivered','delivered','shipping','paid','confirmed','cancelled'];
+  for (let i = 0; i < 30; i++) {
+    const uid = chartUsers[Math.floor(Math.random() * chartUsers.length)];
+    const total = 400000 + Math.floor(Math.random() * 1600000);
+    await makeOrder(uid, Math.floor(Math.random() * 28), statuses[Math.floor(Math.random() * statuses.length)], total);
   }
-  console.log('  ✅ 40 extra random orders for charts\n');
+  console.log('  ✅ 30 random orders cho biểu đồ MIS (chỉ VIP users)');
 
-  // -- STEP 4: CRM Tasks --
-  console.log('📋 Creating CRM Tasks & Tickets...');
-  const taskTitles = [
-    'Gọi điện chăm sóc sau mua', 'Follow-up đơn hàng VIP', 'Hỏi thăm trải nghiệm sản phẩm',
-    'Nhắc gia hạn membership', 'Gửi voucher tặng sinh nhật', 'Tư vấn outfit mùa hè',
-    'Xác nhận địa chỉ giao hàng', 'Mời tham gia sale event'
-  ];
-  const taskPriorities = ['low', 'normal', 'high', 'urgent'] as const;
-
-  for (let i = 0; i < taskTitles.length; i++) {
-    const uid = allUsers[i % allUsers.length];
-    const dueOffset = [-3, -1, 1, 2, 3, 5, 7, 14][i]; // some overdue (negative)
-    const due = new Date();
-    due.setDate(due.getDate() + dueOffset);
-    await supabase.from('crm_tasks').insert({
-      customer_user_id: uid,
-      title: taskTitles[i],
-      body: 'Chăm sóc khách hàng thường xuyên để tăng tỉ lệ quay lại.',
-      status: dueOffset < 0 ? 'open' : (Math.random() > 0.4 ? 'open' : 'done'),
-      priority: taskPriorities[Math.floor(Math.random() * taskPriorities.length)],
-      due_at: due.toISOString(),
-    });
+  // ---- Step 5: Verify ----
+  console.log('\n🔍 Step 4: Verifying RFM scores...');
+  const { data: allOrders } = await supabase
+    .from('orders').select('user_id, status, total, created_at')
+    .in('status',['paid','confirmed','shipping','delivered']);
+  
+  const byUser = new Map<string, {count:number, total:number, last:string}>();
+  for (const o of allOrders ?? []) {
+    const e = byUser.get(o.user_id) ?? {count:0, total:0, last:''};
+    e.count++; e.total += o.total ?? 0;
+    if (!e.last || o.created_at > e.last) e.last = o.created_at;
+    byUser.set(o.user_id, e);
   }
-  console.log('  ✅ 8 CRM Tasks (3 overdue)');
-
-  // -- STEP 5: CRM Tickets --
-  const ticketData = [
-    { subject: 'Đơn hàng giao chậm hơn dự kiến', priority: 'high', status: 'open' },
-    { subject: 'Sản phẩm bị lỗi vải tại đường may', priority: 'urgent', status: 'open' },
-    { subject: 'Hỏi cách đổi size sản phẩm', priority: 'normal', status: 'pending' },
-    { subject: 'Thanh toán thất bại, tiền bị trừ', priority: 'urgent', status: 'open' },
-    { subject: 'Muốn hủy đơn và hoàn tiền', priority: 'high', status: 'pending' },
-    { subject: 'Không nhận được email xác nhận', priority: 'normal', status: 'resolved' },
-    { subject: 'Voucher không áp dụng được', priority: 'low', status: 'closed' },
-    { subject: 'Hỏi về chương trình thành viên VIP', priority: 'low', status: 'resolved' },
-  ];
-
-  for (let i = 0; i < ticketData.length; i++) {
-    const uid = allUsers[i % allUsers.length];
-    const t = ticketData[i];
-    await supabase.from('crm_tickets').insert({
-      customer_user_id: uid,
-      subject: t.subject,
-      body: 'Chi tiết vấn đề khách hàng phản ánh.',
-      status: t.status,
-      priority: t.priority,
-    });
-  }
-  console.log('  ✅ 8 CRM Tickets (4 urgent/high)\n');
-
-  // -- STEP 6: CRM Campaigns --
-  console.log('📢 Creating CRM Campaigns...');
-  const { data: segments } = await supabase.from('crm_segments').select('id, name');
-  if (segments && segments.length > 0) {
-    const seg = (name: string) => segments.find(s => s.name?.toLowerCase().includes(name))?.id ?? segments[0].id;
-
-    await supabase.from('crm_campaigns').insert([
-      {
-        name: 'Summer Collection Launch 2026',
-        objective: 'Drive revenue cho BST Hè mới',
-        segment_id: seg('vip'),
-        channel: 'email',
-        status: 'running',
-        budget: 8000000,
-        expected_revenue: 80000000,
-        notes: 'Gửi email cá nhân hóa cho 200 khách VIP',
-      },
-      {
-        name: 'Win-back 90-day',
-        objective: 'Lấy lại khách không mua 90 ngày',
-        segment_id: seg('win'),
-        channel: 'sms',
-        status: 'scheduled',
-        scheduled_at: new Date(Date.now() + 86400000 * 5).toISOString(),
-        budget: 3000000,
-        expected_revenue: 25000000,
-        notes: 'Voucher 20% cho khách cũ quay lại',
-      },
-      {
-        name: 'Welcome Series - New Members',
-        objective: 'Chào đón thành viên mới',
-        segment_id: seg('new'),
-        channel: 'email',
-        status: 'running',
-        budget: 1000000,
-        expected_revenue: 15000000,
-        notes: 'Chuỗi 3 email chào mừng trong 7 ngày đầu',
-      },
-    ]);
-    console.log('  ✅ 3 CRM Campaigns\n');
+  
+  for (const [uid, stat] of byUser.entries()) {
+    const { data: prof } = await supabase.from('profiles').select('full_name').eq('user_id', uid).single();
+    const name = prof?.full_name ?? uid.slice(0,8);
+    const recencyDays = Math.floor((Date.now() - new Date(stat.last).getTime()) / 86400000);
+    const R = recencyDays <= 14 ? 5 : recencyDays <= 30 ? 4 : recencyDays <= 60 ? 3 : recencyDays <= 120 ? 2 : 1;
+    const F = stat.count >= 8 ? 5 : stat.count >= 5 ? 4 : stat.count >= 3 ? 3 : stat.count >= 1 ? 2 : 1;
+    const M = stat.total >= 10000000 ? 5 : stat.total >= 5000000 ? 4 : stat.total >= 2000000 ? 3 : stat.total > 0 ? 2 : 1;
+    const score = R + F + M;
+    const seg = score >= 13 ? '🟡 VIP' : (recencyDays >= 60 && stat.total > 0) ? '🔴 AT_RISK' : '⚪ standard';
+    console.log(`  ${seg} | ${name}: orders=${stat.count} spend=${VND(stat.total)} recency=${recencyDays}d score=${score}(R${R}F${F}M${M})`);
   }
 
-  console.log('✅ Analytics & CRM Seed v2 DONE!\n');
-  console.log('Now reload /admin/decision-support and /admin/reports to see data.\n');
+  console.log('\n✅ Done! Refresh /admin/decision-support and /admin/reports\n');
 }
 
-seedAnalytics().catch(console.error);
+cleanAndSeed().catch(console.error);
