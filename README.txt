@@ -8,562 +8,270 @@
   Version   : 0.1.0
 
 --------------------------------------------------------------------------------
-TABLE OF CONTENTS
+TABLE OF CONTENTS (MỤC LỤC LƯỚT NHANH)
 --------------------------------------------------------------------------------
-  1. Project Overview
-  2. Technology Stack
-  3. System Architecture
-  4. Feature List
-  5. Prerequisites
-  6. Quick Start (Mock Mode — No Database Required)
-  7. Full Setup (Supabase + Real Database)
-  8. Environment Variables Reference
-  9. Database Setup (Migrations)
- 10. Available Scripts
- 11. Project Structure
- 12. Admin Panel Access
- 13. Deployment (Vercel)
- 14. Troubleshooting
+  1. Project Overview (Tổng quan dự án)
+  2. Tech Stack (Đồ chơi công nghệ)
+  3. System Architecture (Kiến trúc hệ thống)
+  4. Features List (Các tính năng đã build)
+  5. Requirements (Cần cài gì trước khi run)
+  6. Quick Start (Run hệ Mock - Không cần Database thật)
+  7. Full Setup (Run hệ Supabase - Hàng Real)
+  8. Env File (Cấu hình biến môi trường)
+  9. Database Setup (Chạy Migrations)
+ 10. Available Scripts (Mấy lệnh npm hay xài)
+ 11. Folder Structure (Cấu trúc source code)
+ 12. Admin Panel (Cách access vào trang quản trị)
+ 13. Deployment (Đẩy lên Vercel)
+ 14. Troubleshooting (Fix bugs lặt vặt)
  15. License & Credits
 
 ================================================================================
 1. PROJECT OVERVIEW
 ================================================================================
 
-B&D Fashion is a full-featured e-commerce platform built for a Vietnamese
-streetwear brand. It combines a premium storefront (B2C) with a comprehensive
-admin/ERP system in a single Next.js monorepo.
+B&D Fashion là một con hàng e-commerce platform full-featured được build dành 
+riêng cho một brand streetwear Việt Nam. Nó kết hợp một cái storefront B2C xịn xò
+cùng với một hệ thống Admin/ERP đồ sộ bên trong một Next.js monorepo duy nhất.
 
   Key Highlights:
-  - Premium storefront UI inspired by global fashion brands (Levents, ARKET)
-  - Complete Admin Panel with TPS / MIS / DSS / ESS / CRM modules
-  - Dual-mode: runs with real Supabase DB or offline with Mock data
-  - Vietnamese payment gateways: VNPay, MoMo (sandbox-ready)
-  - AI-powered chatbot assistant (built-in)
-  - SEO-optimized with sitemap.xml, robots.txt, SSR / SSG
+  - Storefront UI bao mượt, flow chuẩn các global fashion brands.
+  - Admin Panel tích hợp full module: TPS / MIS / DSS / ESS / CRM.
+  - Dual-mode: có thể run bằng database thật (Supabase) hoặc offline Mock data.
+  - Tích hợp cổng thanh toán (payment gateway) VNPay, MoMo (sandbox).
+  - Có chatbot AI assistant tích hợp sẵn.
+  - Tối ưu SEO chuẩn chỉ, support SSR / SSG.
 
 ================================================================================
-2. TECHNOLOGY STACK
+2. TECH STACK (Đồ chơi công nghệ)
 ================================================================================
 
   FRONTEND
   --------
-  - Framework   : Next.js 15 (App Router) — SSR & SSG
+  - Framework   : Next.js 15 (App Router) — SSR & SSG support
   - UI Library  : React 19
-  - Language    : TypeScript 5.7
-  - Styling     : Tailwind CSS v4 + custom CSS micro-animations
+  - Language    : TypeScript 5.7 (Code strict cho an tâm)
+  - Styling     : Tailwind CSS v4 + micro-animations tự code
   - Icons       : Lucide React
-  - Components  : Radix UI (headless), shadcn/ui pattern
-  - Charts      : Recharts
+  - Components  : Radix UI (headless), build style theo shadcn/ui
+  - Charts      : Recharts để render biểu đồ cho đẹp
   - Fonts       : Google Fonts (Inter, Geist)
 
   BACKEND
   -------
-  - API Layer   : Next.js Route Handlers (app/api/*) + Server Actions
-  - BaaS        : Supabase (Auth, Database, Storage, Realtime)
-  - Auth        : Supabase Auth — JWT, Email/Password, Session management
-  - Email       : Resend API
-  - Payments    : VNPay (sandbox), MoMo (sandbox)
+  - API Layer   : Next.js Route Handlers + Server Actions (no need Express)
+  - BaaS        : Supabase gánh Auth, Database, Storage, Realtime
+  - Auth        : Supabase Auth (JWT, Email/Password session)
+  - Email       : Send qua Resend API
+  - Payments    : VNPay, MoMo (sandbox mode)
 
   DATABASE
   --------
-  - Engine      : PostgreSQL (managed by Supabase)
+  - Engine      : PostgreSQL (Supabase lo)
   - Client      : @supabase/supabase-js v2
-  - ORM         : Raw SQL via Supabase client + RLS policies
-  - Migrations  : 16 sequential migration files in /supabase/migrations/
+  - ORM         : Chơi Raw SQL + RLS policies cho bảo mật
+  - Migrations  : Mấy chục file SQL vứt trong folder /supabase/migrations/
 
   DEVOPS & TESTING
   ----------------
-  - Hosting     : Vercel (recommended)
+  - Hosting     : Vercel (Auto deploy cho nhàn)
   - E2E Tests   : Playwright
-  - Unit Tests  : Node.js built-in test runner (tsx --test)
-  - Analytics   : Vercel Analytics
+  - Unit Tests  : Node.js test runner (tsx --test)
+  - Analytics   : Vercel Analytics tracking log
 
 ================================================================================
 3. SYSTEM ARCHITECTURE
 ================================================================================
 
-  Architecture: Monolithic SSR (single-repo, Next.js App Router)
+  Kiến trúc: Monolithic SSR (chơi single-repo, xài Next.js App Router).
 
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  Browser (Client)                                               │
-  └───────────────────────────┬─────────────────────────────────────┘
-                              │ HTTP
-  ┌───────────────────────────▼─────────────────────────────────────┐
-  │  Next.js Server (BFF — Backend for Frontend)                    │
-  │  ┌─────────────────────┐  ┌──────────────────────────────────┐  │
-  │  │  Storefront          │  │  Admin Dashboard                 │  │
-  │  │  app/(store)/*       │  │  app/admin/*                     │  │
-  │  │  - SSR / SSG pages   │  │  - Dynamic / Realtime pages      │  │
-  │  │  - SEO optimized     │  │  - Role-based auth required      │  │
-  │  └─────────────────────┘  └──────────────────────────────────┘  │
-  │  ┌─────────────────────────────────────────────────────────┐     │
-  │  │  API Routes: app/api/*  (REST endpoints + webhooks)     │     │
-  └──┴─────────────────────────────────────────────────────────┴─────┘
-                              │
-  ┌───────────────────────────▼─────────────────────────────────────┐
-  │  Supabase (PostgreSQL + Auth + Storage)                         │
-  └─────────────────────────────────────────────────────────────────┘
-
-  Two running modes:
-  [1] MOCK MODE   — No database needed. Uses local static data from /data/mock/
-  [2] SUPABASE    — Full live database with auth, orders, inventory, etc.
+  Bao gồm 2 modes để run:
+  [1] MOCK MODE   — Khỏi cần setup DB, fetch data tĩnh từ /data/mock/. 
+                    Dùng để UI/UX testing hoặc dev lẹ.
+  [2] SUPABASE    — Dùng hàng real, data sống. Yêu cầu setup keys đàng hoàng.
 
 ================================================================================
-4. FEATURE LIST
+4. FEATURES LIST (Tính năng)
 ================================================================================
 
-  STOREFRONT (Customer-facing)
+  STOREFRONT (Dành cho User)
   ----------------------------
-  [x] Home Page — Dynamic hero banner, new arrivals, best sellers, blog section
-  [x] Collections — Sidebar filter by category, tag (new / best-seller)
-  [x] Product Detail — Image gallery, color/size picker, real-time stock check
-  [x] Search — Full-text product search
-  [x] Cart — Slide-in drawer with free-shipping progress bar (gamification)
-  [x] Checkout — One-page checkout (VNPay / MoMo / COD)
-  [x] Authentication — Login, Register, Forgot Password
-  [x] User Account — Order history, Wishlist, Address management
-  [x] Membership Tiers — Points accumulation, VIP / Member badges
-  [x] Blog — Styled editorial posts
-  [x] About / Careers — Static info pages
-  [x] Size Guide — Popup size chart per product
-  [x] AI Chatbot — In-page chat widget for product Q&A
-  [x] Reviews — Customer review submission and display
+  [x] Home Page — Banner động, hàng mới, best sellers.
+  [x] Collections — Filter sản phẩm, sidebar các kiểu.
+  [x] Product Detail — Xem ảnh, chọn size/màu, check stock real-time.
+  [x] Cart & Checkout — Thanh toán mượt, support VNPay/MoMo/COD.
+  [x] Auth — Login, Đăng ký, Quên pass.
+  [x] User Dashboard — Tracking đơn hàng, Wishlist, Địa chỉ.
+  [x] Thành viên — Tích điểm, nâng rank VIP.
+  [x] Extra — Blog, AI Chatbot, Reviews, Size Guide.
 
-  ADMIN PANEL (Staff/Management)
+  ADMIN PANEL (Dành cho Staff/Sếp)
   --------------------------------
-  [TPS] Orders        — Full order lifecycle management (create → ship → complete)
-  [TPS] Products      — CRUD products + variants (color, size), image upload
-  [TPS] Collections   — Manage product collections/categories
-  [TPS] Promotions    — Discount codes, vouchers, campaign management
-  [MIS] Inventory     — SKU-level stock, low-stock alerts, movement log
-  [MIS] MIS Reports   — Revenue dashboard, order trends, top products
-  [DSS] Analytics     — Conversion rate, sell-through rate, demand forecasting
-  [ESS] Executive     — C-level KPI dashboard: growth rate, financial overview
-  [CRM] Customers     — Customer profiles, purchase history, tier management
-  [CRM] Notifications — Push notifications + email template editor
-  [CMS] Blog          — Create/edit blog posts
-  [CMS] Pages         — Manage static CMS pages
-  [CMS] Home Content  — Edit homepage banners and text via admin UI
-  [SYS] Settings      — Shipping zones, email config, system preferences
+  [TPS] Orders & Products — Quản lý vòng đời đơn hàng, CRUD sản phẩm.
+  [MIS] Inventory & Reports — Theo dõi stock, report doanh thu.
+  [DSS] Analytics — Gợi ý insight, phân tích tỉ lệ chuyển đổi.
+  [ESS] Executive — Dashboard KPI cho level C (Sếp tổng).
+  [CRM] Customers — Quản lý profile, follow-up, gửi campaign.
+  [CMS] Blog & Content — Chỉnh sửa bài viết, thay đổi banner trang chủ.
+  [SYS] Settings — Cấu hình hệ thống, phí ship, template email.
 
 ================================================================================
-5. PREREQUISITES
+5. REQUIREMENTS (Cần cài gì?)
 ================================================================================
 
-  Required:
-  - Node.js  >= 18.17.0   (download: https://nodejs.org/)
-  - Git                   (download: https://git-scm.com/)
-  - npm      >= 9.x       (bundled with Node.js)
+  Bắt buộc:
+  - Node.js >= 18.17 (Tải tại nodejs.org)
+  - Git
+  - npm >= 9.x
 
-  Optional (for full database features):
-  - Supabase account      (free tier available: https://supabase.com/)
-
-  To verify your Node.js version:
-    node --version
-    npm --version
+  Option thêm: Account Supabase để run hệ data thật.
 
 ================================================================================
-6. QUICK START (MOCK MODE — No Database Required)
+6. QUICK START (Run hệ Mock - Không cần Database)
 ================================================================================
 
-  This mode uses static mock data. No Supabase account needed.
-  Perfect for development, demo, and UI testing.
+  Dành cho ai lười setup DB, chỉ muốn kéo code về run UI check xem sao.
 
-  STEP 1 — Clone the repository
+  STEP 1 — Clone repo
   ------------------------------
     git clone https://github.com/baoquocnguyn148/ClothingStore.git
     cd ClothingStore
 
-  STEP 2 — Install dependencies
+  STEP 2 — Cài packages (Dependencies)
   ------------------------------
     npm install
 
-  STEP 3 — Create environment file
+  STEP 3 — Config Env file
   ----------------------------------
-    Copy .env.example to .env.local:
-
-    Windows (cmd):     copy .env.example .env.local
-    Windows (PS):      Copy-Item .env.example .env.local
-    Mac/Linux:         cp .env.example .env.local
-
-    Make sure these values are set in .env.local:
+    Copy file .env.example ra thành .env.local, rồi check kỹ 2 dòng này:
       COMMERCE_PROVIDER=mock
       NEXT_PUBLIC_COMMERCE_PROVIDER=mock
 
-  STEP 4 — Start the development server
+  STEP 4 — Start server lên
   ----------------------------------------
     npm run dev
 
-  STEP 5 — Open in browser
+  STEP 5 — Check trình duyệt
   -------------------------
-    Storefront  : http://localhost:3000
-    Admin Panel : http://localhost:3000/admin
-
-  NOTE: In Mock Mode, login/register and checkout will not persist data.
-        The admin panel will show mock analytics data.
+    Store: http://localhost:3000
+    Admin: http://localhost:3000/admin
 
 ================================================================================
-7. FULL SETUP (SUPABASE + REAL DATABASE)
+7. FULL SETUP (Chạy hệ Supabase Real)
 ================================================================================
 
-  STEP 1–2: Same as Quick Start above (clone + npm install)
+  STEP 1–2: Vẫn clone repo và run `npm install`.
 
-  STEP 3 — Create a Supabase project
+  STEP 3 — Tạo project trên Supabase
   ------------------------------------
-    a) Go to https://supabase.com/ and create a free account
-    b) Create a new project (choose any region)
-    c) Wait for the project to initialize (~2 minutes)
-    d) Go to Project Settings > API to find your keys:
-       - Project URL     (NEXT_PUBLIC_SUPABASE_URL)
-       - anon/public key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
-       - service_role key (SUPABASE_SERVICE_ROLE_KEY)  [keep this SECRET]
+    - Lên supabase.com tạo project, đợi nó init xong.
+    - Lấy 3 thông số này trong Project Settings > API:
+      + Project URL
+      + anon key (public)
+      + service_role key (Cái này phải GIẤU KỸ, không đc share lung tung)
 
-  STEP 4 — Configure environment variables
+  STEP 4 — Đổ data vào Env file
   ------------------------------------------
-    Create .env.local in the project root with the following content:
-
-      NEXT_PUBLIC_APP_URL=http://localhost:3000
-
+    Mở file .env.local lên và sửa lại:
       COMMERCE_PROVIDER=supabase
       NEXT_PUBLIC_COMMERCE_PROVIDER=supabase
+      
+      NEXT_PUBLIC_SUPABASE_URL=link-cua-ban
+      NEXT_PUBLIC_SUPABASE_ANON_KEY=key-anon
+      SUPABASE_SERVICE_ROLE_KEY=key-service-role
 
-      NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-      SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
-
-    Optional (for payment gateways):
-      VNPAY_TMN_CODE=your-vnpay-code
-      VNPAY_HASH_SECRET=your-vnpay-secret
-      VNPAY_PAYMENT_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-
-      MOMO_PARTNER_CODE=your-momo-code
-      MOMO_ACCESS_KEY=your-momo-access-key
-      MOMO_SECRET_KEY=your-momo-secret
-      MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
-
-  STEP 5 — Run database migrations
+  STEP 5 — Chạy Migrations (Setup Database schema)
   ----------------------------------
-    Option A: Via Supabase Dashboard (easiest)
-      - Go to your Supabase project > SQL Editor
-      - Run each file in /supabase/migrations/ in order (by filename)
-      - Files are named with timestamps, run from oldest to newest
+    Vào SQL Editor trên Supabase, lấy mấy file SQL trong thư mục 
+    `/supabase/migrations/` paste vào run lần lượt từ cũ đến mới.
 
-    Option B: Via Supabase CLI (advanced)
-      npm install -g supabase
-      supabase login
-      supabase link --project-ref your-project-ref
-      supabase db push
-
-  STEP 6 — Seed sample data (optional)
+  STEP 6 — Seed Data (Bơm data ảo cho dễ test)
   ---------------------------------------
     npm run db:seed
+    Nó sẽ insert sẵn mấy cái products, categories để demo.
 
-    This inserts sample products, categories, users, and orders
-    so the admin panel has demo data to display.
-
-  STEP 7 — Create an admin user
+  STEP 7 — Tạo Admin User
   ------------------------------
-    a) Register a new account at http://localhost:3000/register
-    b) Run the make-admin script to grant admin role:
+    - Lên web (localhost:3000) tự đăng ký 1 tài khoản mới.
+    - Xong mở terminal run lệnh này để set role Admin:
+      npx tsx scripts/make-admin.ts email-ban-vua-dang-ky@gmail.com
 
-       npx tsx scripts/make-admin.ts your@email.com
-
-  STEP 8 — Start development server
+  STEP 8 — Start dev server
   -----------------------------------
     npm run dev
 
-    Storefront  : http://localhost:3000
-    Admin Panel : http://localhost:3000/admin  (requires admin account)
-
 ================================================================================
-8. ENVIRONMENT VARIABLES REFERENCE
+8. ENV VARIABLES (Các biến môi trường)
 ================================================================================
 
-  Variable                         Required  Description
-  -------------------------------- --------- ----------------------------------
-  NEXT_PUBLIC_APP_URL              No        App base URL (default: localhost:3000)
-  COMMERCE_PROVIDER                No        "mock" or "supabase" (default: mock)
-  NEXT_PUBLIC_COMMERCE_PROVIDER    No        Same as above, exposed to browser
-  NEXT_PUBLIC_SUPABASE_URL         Supabase  Your Supabase project URL
-  NEXT_PUBLIC_SUPABASE_ANON_KEY    Supabase  Supabase public anonymous key
-  SUPABASE_SERVICE_ROLE_KEY        Supabase  Supabase service role key (server-only)
-  VNPAY_TMN_CODE                   Payment   VNPay terminal merchant code
-  VNPAY_HASH_SECRET                Payment   VNPay HMAC hash secret
-  VNPAY_PAYMENT_URL                Payment   VNPay payment gateway URL
-  MOMO_PARTNER_CODE                Payment   MoMo partner code
-  MOMO_ACCESS_KEY                  Payment   MoMo access key
-  MOMO_SECRET_KEY                  Payment   MoMo secret key
-  MOMO_ENDPOINT                    Payment   MoMo API endpoint
-  SHOPIFY_STORE_DOMAIN             Optional  Shopify store domain (if using Shopify)
-  SHOPIFY_STOREFRONT_ACCESS_TOKEN  Optional  Shopify storefront token
-
-  IMPORTANT: Never commit .env.local to git. It is already in .gitignore.
-             The SUPABASE_SERVICE_ROLE_KEY must NEVER be exposed to the browser.
+  Đọc file .env.example để biết thêm chi tiết. 
+  Lưu ý quan trọng: KHÔNG BAO GIỜ commit .env.local lên Github.
 
 ================================================================================
-9. DATABASE SETUP (MIGRATIONS)
+9. DATABASE SETUP
 ================================================================================
 
-  Run these SQL files in order via the Supabase SQL Editor:
-
-  Order  File                                      Description
-  -----  ----------------------------------------  ----------------------------
-   1     20260521000001_initial_schema.sql          Core tables: users, products,
-                                                    orders, variants, inventory
-   2     20260521000002_rls_policies.sql            Row-Level Security policies
-   3     20260521000003_storage_buckets.sql         Supabase Storage buckets
-   4     20260522000004_catalog_enhancements.sql    Product catalog improvements
-   5     20260522000005_promotions_and_shipping.sql Promo codes & shipping zones
-   6     20260522000009_functions_and_triggers.sql  DB functions & triggers
-   7     20260522000010_orders_profile_fk.sql       Order-to-profile FK constraint
-   8     20260523000001_remove_careers.sql          Remove careers table
-   9     20260523000002_home_content_blocks.sql     CMS home content blocks
-  10     20260524000001_email_templates.sql         Email template table
-  11     20260524000001_phase_b_order_jobs.sql      Order job queue
-  12     20260524000002_admin_notifications.sql     Admin notification system
-  13     20260525000001_crm_core.sql                CRM customer tables
-  14     20260525000002_admin_audit_logs.sql        Admin audit logging
-  15     20260525000003_mis_dss_campaigns.sql       MIS/DSS campaign analytics
-  16     20260529000001_inventory_enhancements.sql  Inventory improvements
+  Nhớ run SQL theo thứ tự từ file số 1 đến hết trong folder `migrations`.
+  - 01: Core tables (user, orders, products)
+  - 02: RLS Policies (phân quyền bảo mật)
+  - ...
+  - 15: MIS, DSS, CRM analytics
 
 ================================================================================
-10. AVAILABLE SCRIPTS
+10. LỆNH NPM (Scripts)
 ================================================================================
 
-  npm run dev                    Start development server (localhost:3000)
-  npm run build                  Build production bundle
-  npm run start                  Start production server (after build)
-  npm run lint                   Run ESLint code linting
-  npm run test                   Run unit tests
-  npm run db:seed                Seed Supabase with sample data
-  npm run db:seed-email-templates  Seed email templates to DB
-  npm run db:sync-assets         Sync product image assets
+  npm run dev       -> Mở dev server
+  npm run build     -> Build bản production
+  npm run start     -> Start server bản production (nhớ build trước)
+  npm run lint      -> Check lỗi syntax ESLint
+  npm run db:seed   -> Seed data mẫu lên Supabase
 
 ================================================================================
-11. PROJECT STRUCTURE
+11. FOLDER STRUCTURE (Cấu trúc source code)
 ================================================================================
 
   levents-clone/
-  ├── app/                       # Next.js App Router
-  │   ├── (store)/               # Storefront routes (customer-facing)
-  │   │   ├── page.tsx           # Home page
-  │   │   ├── collections/       # Product collections + filters
-  │   │   ├── products/          # Product detail pages
-  │   │   ├── checkout/          # Checkout flow
-  │   │   ├── account/           # User dashboard
-  │   │   ├── login/             # Authentication pages
-  │   │   ├── register/
-  │   │   ├── blog/              # Blog/editorial
-  │   │   ├── search/            # Search results
-  │   │   ├── about-us/          # Static info pages
-  │   │   └── careers/
-  │   ├── admin/                 # Admin Panel routes
-  │   │   ├── page.tsx           # Admin dashboard (analytics overview)
-  │   │   ├── products/          # Product management
-  │   │   ├── orders/            # Order management
-  │   │   ├── inventory/         # Inventory management
-  │   │   ├── customers/         # CRM - customer profiles
-  │   │   ├── collections/       # Collection management
-  │   │   ├── promotions/        # Discount/voucher management
-  │   │   ├── reports/           # MIS reports
-  │   │   ├── executive/         # ESS executive dashboard
-  │   │   ├── decision-support/  # DSS analytics
-  │   │   ├── crm/               # CRM campaigns
-  │   │   ├── notifications/     # Admin notifications
-  │   │   ├── blog/              # CMS blog
-  │   │   ├── home-content/      # CMS homepage editor
-  │   │   ├── pages/             # CMS static pages
-  │   │   ├── careers/           # Careers management
-  │   │   ├── reviews/           # Review moderation
-  │   │   └── settings/          # System settings
-  │   ├── api/                   # REST API endpoints
-  │   │   ├── v1/                # Versioned API routes
-  │   │   ├── auth/              # Auth callbacks
-  │   │   ├── products/          # Product endpoints
-  │   │   ├── careers/           # Careers endpoints
-  │   │   ├── admin/             # Admin-only endpoints
-  │   │   └── webhooks/          # Payment webhooks (VNPay, MoMo)
-  │   ├── layout.tsx             # Root layout (fonts, providers)
-  │   ├── globals.css            # Global styles + CSS variables
-  │   ├── robots.ts              # SEO robots.txt
-  │   └── sitemap.ts             # Dynamic sitemap.xml
-  │
-  ├── components/
-  │   ├── store/                 # Storefront components
-  │   │   ├── header.tsx         # Navigation header
-  │   │   ├── cart-drawer.tsx    # Slide-in cart
-  │   │   ├── product-card.tsx   # Product card
-  │   │   ├── product-detail.tsx # Full product detail view
-  │   │   ├── product-grid.tsx   # Product listing grid
-  │   │   ├── chat-widget.tsx    # AI chatbot widget
-  │   │   └── ...               # Other store components
-  │   ├── admin/                 # Admin panel components
-  │   │   ├── sidebar.tsx        # Admin navigation
-  │   │   ├── product-form.tsx   # Product CRUD form
-  │   │   ├── inventory-table.tsx
-  │   │   └── ...
-  │   └── ui/                    # Reusable UI primitives (shadcn/ui)
-  │       ├── button.tsx, input.tsx, dialog.tsx ...
-  │       └── chart.tsx          # Recharts wrapper
-  │
-  ├── lib/                       # Shared utilities & integrations
-  │   ├── supabase/              # Supabase client (client/server/admin)
-  │   ├── commerce/              # Commerce layer (mock/supabase/shopify)
-  │   ├── server/                # Server-only logic (payment, email)
-  │   ├── auth/                  # Auth utilities
-  │   ├── cart/                  # Cart state management
-  │   ├── wishlist/              # Wishlist logic
-  │   ├── home-content/          # CMS content helpers
-  │   ├── brand.ts               # Brand constants (name, contact)
-  │   ├── config.ts              # App configuration
-  │   └── utils.ts               # cn() class utility
-  │
-  ├── hooks/                     # React custom hooks
-  │   ├── use-chat.ts            # Chatbot hook
-  │   ├── use-mobile.ts          # Mobile detection hook
-  │   └── use-toast.ts           # Toast notification hook
-  │
-  ├── data/
-  │   ├── mock/                  # Static mock data (products, blog, reviews)
-  │   └── chat/                  # Chatbot knowledge base (policies, style guide)
-  │
-  ├── supabase/
-  │   ├── migrations/            # 16 SQL migration files (run in order)
-  │   └── seed.sql               # Basic seed data
-  │
-  ├── scripts/                   # Utility scripts
-  │   ├── seed-supabase.ts       # Seed database with demo data
-  │   ├── make-admin.ts          # Grant admin role to a user
-  │   ├── reset-password.ts      # Reset user password via CLI
-  │   ├── seed-email-templates.ts
-  │   └── sync-product-assets.ts
-  │
-  ├── tests/                     # Unit tests
-  │   ├── admin-analytics.test.ts
-  │   ├── mock-commerce.test.ts
-  │   └── promotion-formula.test.ts
-  │
-  ├── public/                    # Static assets (icons, placeholder images)
-  ├── styles/                    # Additional stylesheets
-  ├── middleware.ts              # Next.js middleware (auth, redirects)
-  ├── next.config.mjs            # Next.js configuration (image domains)
-  ├── tsconfig.json              # TypeScript configuration
-  ├── .env.example               # Environment variables template
-  └── package.json               # Dependencies and scripts
+  ├── app/                       # Source Next.js App Router
+  │   ├── (store)/               # Giao diện khách hàng (Storefront)
+  │   ├── admin/                 # Admin Panel
+  │   ├── api/                   # REST API backend
+  │   ├── globals.css            # Styles toàn cục
+  ├── components/                # React Components
+  ├── lib/                       # Code core: gọi supabase, logic cart...
+  ├── data/mock/                 # Chứa mock data dạng file JSON tĩnh
+  ├── supabase/migrations/       # File SQL để setup DB
+  └── scripts/                   # Mấy cái tool chạy tay (npx tsx)
 
 ================================================================================
-12. ADMIN PANEL ACCESS
+12. DEPLOYMENT (Đẩy code lên Vercel)
 ================================================================================
 
-  URL: http://localhost:3000/admin
-
-  Default admin setup after Supabase installation:
-  1. Register a new account at /register with any email
-  2. Run: npx tsx scripts/make-admin.ts your@email.com
-  3. Login again — you will now have admin access
-
-  The admin panel is protected by middleware. Non-admin users are
-  automatically redirected to the storefront homepage.
-
-  Admin sections and required roles:
-  - /admin                → Overview dashboard (admin)
-  - /admin/products       → Manage products (admin)
-  - /admin/orders         → Manage orders (admin)
-  - /admin/inventory      → Inventory control (admin)
-  - /admin/customers      → CRM (admin)
-  - /admin/executive      → Executive ESS (admin)
-  - /admin/settings       → System config (admin)
+  Xài Vercel là best choice cho con Next.js này.
+  1. Push code lên Github (`git add .`, `git commit -m "push code"`, `git push`)
+  2. Lên vercel.com tạo project, link cái repo Github vào.
+  3. Bê hết đống config trong `.env.local` nhét vào mục Environment Variables.
+  4. Bấm Deploy. Nhớ update `NEXT_PUBLIC_APP_URL` thành domain của Vercel nhé.
 
 ================================================================================
-13. DEPLOYMENT (VERCEL)
+13. FIX BUGS LẶT VẶT (Troubleshooting)
 ================================================================================
 
-  Recommended deployment: Vercel (free tier available)
-
-  STEP 1: Push your code to GitHub
-    git add .
-    git commit -m "Initial commit"
-    git push origin main
-
-  STEP 2: Import project at https://vercel.com/new
-
-  STEP 3: Add environment variables in Vercel project settings
-    Add all variables from .env.example with your real values.
-    Set NEXT_PUBLIC_APP_URL to your Vercel domain (e.g. https://myapp.vercel.app)
-
-  STEP 4: Deploy
-    Vercel will automatically build and deploy on every push to main.
-
-  Build command (auto-detected): npm run build
-  Output directory (auto-detected): .next
-
-  IMPORTANT: After deploying, update NEXT_PUBLIC_APP_URL to your live URL.
-             This is required for correct OAuth redirects and email links.
+  - Lỗi "Cannot find module": Chạy lại `npm install` xem sao.
+  - Vào admin bị đá ra home: Chắc chưa cấp role Admin. Xem lại Step 7.
+  - Hình load bị xịt: Check lại Storage bucket trên Supabase set Public chưa.
+  - Vẫn hiện Mock data dù đã config: Coi lại file .env.local đổi thành `supabase` chưa. Nhớ restart lại dev server!
 
 ================================================================================
-14. TROUBLESHOOTING
+14. LICENSE & CREDITS
 ================================================================================
 
-  ISSUE: "Cannot find module" error on npm run dev
-  SOLUTION: Run "npm install" again. Make sure you are in the project root.
+  Project này được build để nộp Báo Cáo Chuyên Đề, cover đủ 5 hệ thống HTTT:
+  TPS, MIS, DSS, ESS và CRM.
 
-  ISSUE: Admin panel redirects to homepage
-  SOLUTION: You need an admin role. Run: npx tsx scripts/make-admin.ts your@email.com
-            Make sure SUPABASE_SERVICE_ROLE_KEY is set in .env.local
-
-  ISSUE: Images not loading from Supabase
-  SOLUTION: Check that your Supabase Storage bucket is set to public.
-            Go to Supabase > Storage > your-bucket > Make Public.
-
-  ISSUE: "Invalid API key" from Supabase
-  SOLUTION: Double-check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-            in .env.local. Make sure there are no trailing spaces.
-
-  ISSUE: App shows blank/mock data even in Supabase mode
-  SOLUTION: Check COMMERCE_PROVIDER=supabase is set (not "mock") in .env.local.
-            Restart the dev server after changing .env.local.
-
-  ISSUE: VNPay/MoMo payment not working
-  SOLUTION: Payment gateways require sandbox keys. Register at:
-            VNPay: https://sandbox.vnpayment.vn/
-            MoMo:  https://business.momo.vn/
-            These only work in production with a registered merchant account.
-
-  ISSUE: Build fails with TypeScript errors
-  SOLUTION: Run "npm run lint" first to identify issues.
-            TypeScript version must match: 5.7.x
-
-  ISSUE: __pycache__ folder appears in project
-  SOLUTION: This is from old Python doc-editing scripts. Safe to delete.
-            Add to .gitignore: __pycache__/, *.pyc
-
-================================================================================
-15. LICENSE & CREDITS
-================================================================================
-
-  This project was built as an academic final thesis (Báo Cáo Chuyên Đề)
-  demonstrating enterprise information systems concepts:
-    - Transaction Processing System (TPS)
-    - Management Information System (MIS)
-    - Decision Support System (DSS)
-    - Executive Support System (ESS)
-    - Customer Relationship Management (CRM)
-
-  Built with:
-  - Next.js — https://nextjs.org/ (MIT License)
-  - Supabase — https://supabase.com/ (Apache 2.0)
-  - Tailwind CSS — https://tailwindcss.com/ (MIT License)
-  - Radix UI — https://radix-ui.com/ (MIT License)
-  - Recharts — https://recharts.org/ (MIT License)
-  - Lucide React — https://lucide.dev/ (ISC License)
-
-  Brand: B&D® — Vietnamese Streetwear (fictional brand for academic purposes)
-  Inspired by: Levents® (https://levents.asia/)
-
-  Author   : baoquocnguyn148
-  Platform : UEF University — Information Systems Major
-  Year     : 2026
+  Built with Next.js, Supabase, Tailwind, Radix UI.
+  Design lấy cảm hứng từ brand Levents.
+  Author: baoquocnguyn148 - Sinh viên ĐH UEF.
 
 ================================================================================
   END OF README
