@@ -18,7 +18,15 @@ export default async function AdminCrmCampaignsPage() {
   let loadError: string | null = null;
 
   if (!isSupa) {
-    loadError = 'Ket noi Supabase de quan ly campaigns.';
+    // Mock Mode CRM Data
+    segments = [
+      { id: '1', slug: 'vip', name: 'VIP Customers', description: 'Top 10% highest spenders' },
+      { id: '2', slug: 'at-risk', name: 'At Risk', description: 'No orders in last 90 days' }
+    ];
+    campaigns = [
+      { id: 'c1', name: 'Summer Collection Launch', objective: 'Sales', channel: 'Email', status: 'Active', budget: 5000000, expected_revenue: 50000000, crm_segments: [{ name: 'VIP Customers' }] },
+      { id: 'c2', name: 'Win-back Promo', objective: 'Retention', channel: 'SMS', status: 'Draft', budget: 2000000, expected_revenue: 15000000, crm_segments: [{ name: 'At Risk' }] }
+    ];
   } else {
     try {
       const db = createAdminClient();

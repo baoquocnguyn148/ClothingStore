@@ -19,7 +19,24 @@ export default async function AdminExecutivePage() {
   let loadError: string | null = null;
 
   if (!isSupa) {
-    loadError = 'Ket noi Supabase de xem ESS dashboard.';
+    // Mock Mode ESS Data
+    data = {
+      kpis: [
+        { label: 'Total Revenue', value: 245000000, format: 'currency', change: 12.5 },
+        { label: 'Active Customers', value: 1250, format: 'number', change: 5.2 },
+        { label: 'Conversion Rate', value: 3.4, format: 'percent', change: -0.5 },
+        { label: 'Customer Retention', value: 68.5, format: 'percent', change: 2.1 }
+      ],
+      trend: Array.from({ length: 30 }).map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (29 - i));
+        return { date: d.toISOString().split('T')[0], revenue: Math.floor(Math.random() * 10000000) + 5000000 };
+      }),
+      risks: [
+        { label: 'Supply Chain Delay', value: 'High impact on Q3', severity: 'High' },
+        { label: 'Competitor Promo', value: 'Loss of market share', severity: 'Medium' }
+      ]
+    };
   } else {
     try {
       data = await new InformationSystemService().getExecutiveDashboard();

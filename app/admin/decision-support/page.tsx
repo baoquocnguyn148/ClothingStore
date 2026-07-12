@@ -20,7 +20,27 @@ export default async function AdminDecisionSupportPage() {
   let loadError: string | null = null;
 
   if (!isSupa) {
-    loadError = 'Ket noi Supabase de dung DSS.';
+    // Mock Mode DSS Data
+    data = {
+      customerSegments: {
+        vipCustomers: [
+          { userId: 'u1', name: 'Nguyễn Văn A', phone: '0901234567', totalSpent: 12000000, orderCount: 15, lastOrderAt: '2026-07-10', recommendation: 'Gửi quà tri ân', rfmScore: 555, rfmSegment: 'Champions', recencyDays: 2 },
+          { userId: 'u2', name: 'Trần Thị B', phone: '0912345678', totalSpent: 8500000, orderCount: 10, lastOrderAt: '2026-07-05', recommendation: 'Mời tham gia sự kiện độc quyền', rfmScore: 554, rfmSegment: 'Loyal', recencyDays: 7 }
+        ],
+        atRiskCustomers: [
+          { userId: 'u3', name: 'Lê Văn C', phone: '0923456789', totalSpent: 4500000, orderCount: 5, lastOrderAt: '2026-01-15', recommendation: 'Gửi voucher giảm giá 20%', rfmScore: 211, rfmSegment: 'At Risk', recencyDays: 178 }
+        ],
+        newNoOrderCustomers: []
+      },
+      productSuggestions: [
+        { productTitle: 'B&D Signature Tee', sku: 'BD-TEE-01', action: 'Restock', reason: 'Bán chạy trong 7 ngày qua, tồn kho thấp' },
+        { productTitle: 'B&D Denim Jacket', sku: 'BD-JKT-02', action: 'Promotion', reason: 'Tồn kho nhiều, tốc độ bán chậm' }
+      ],
+      crmPriorities: {
+        urgentTickets: [],
+        overdueTasks: []
+      }
+    };
   } else {
     try {
       data = await new InformationSystemService().getDecisionSupport();

@@ -22,7 +22,29 @@ export default async function AdminReportsPage({
   let loadError: string | null = null;
 
   if (!isSupa) {
-    loadError = 'Ket noi Supabase de xem bao cao MIS.';
+    // Mock Mode MIS Data
+    report = {
+      summary: { revenue: 158000000, orderCount: 420, repeatRate: 45, openTasks: 12, openTickets: 5, vipByRfm: 85, atRiskByRfm: 34 },
+      orderStatus: [
+        { status: 'pending', count: 45 },
+        { status: 'shipping', count: 120 },
+        { status: 'delivered', count: 255 }
+      ],
+      crm: {
+        tasksByStatus: [{ label: 'To Do', count: 8 }, { label: 'In Progress', count: 4 }],
+        ticketsByStatus: [{ label: 'Open', count: 3 }, { label: 'Pending', count: 2 }],
+        overdueTasks: 2,
+        highPriorityTickets: 1
+      },
+      topProducts: [
+        { title: 'B&D Signature Tee', quantity: 150, revenue: 45000000 },
+        { title: 'B&D Classic Hoodie', quantity: 85, revenue: 51000000 }
+      ],
+      lowStock: [
+        { sku: 'BD-TEE-01', productTitle: 'B&D Signature Tee', stockQty: 5 },
+        { sku: 'BD-CAP-03', productTitle: 'B&D Logo Cap', stockQty: 2 }
+      ]
+    };
   } else {
     try {
       report = await new InformationSystemService().getMisReport(days);
